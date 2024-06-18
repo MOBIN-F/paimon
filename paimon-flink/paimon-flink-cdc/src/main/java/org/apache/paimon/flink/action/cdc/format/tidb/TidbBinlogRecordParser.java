@@ -18,24 +18,24 @@
 
 package org.apache.paimon.flink.action.cdc.format.tidb;
 
- import org.apache.paimon.flink.action.cdc.ComputedColumn;
- import org.apache.paimon.flink.action.cdc.TypeMapping;
- import org.apache.paimon.flink.action.cdc.format.RecordParser;
- import org.apache.paimon.flink.sink.cdc.RichCdcMultiplexRecord;
- import org.apache.paimon.types.RowKind;
- import org.apache.paimon.utils.JsonSerdeUtil;
+import org.apache.paimon.flink.action.cdc.ComputedColumn;
+import org.apache.paimon.flink.action.cdc.TypeMapping;
+import org.apache.paimon.flink.action.cdc.format.RecordParser;
+import org.apache.paimon.flink.sink.cdc.RichCdcMultiplexRecord;
+import org.apache.paimon.types.RowKind;
+import org.apache.paimon.utils.JsonSerdeUtil;
 
- import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.databind.JsonNode;
+import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.databind.JsonNode;
 
- import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
- import org.slf4j.Logger;
- import org.slf4j.LoggerFactory;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
- import java.util.*;
+import java.util.*;
 
- import static org.apache.paimon.utils.JsonSerdeUtil.isNull;
+import static org.apache.paimon.utils.JsonSerdeUtil.isNull;
 
- public class TidbBinlogRecordParser extends RecordParser<byte[]> {
+public class TidbBinlogRecordParser extends RecordParser<byte[]> {
 
     private static final Logger LOG = LoggerFactory.getLogger(TidbBinlogRecordParser.class);
 
@@ -49,8 +49,7 @@ package org.apache.paimon.flink.action.cdc.format.tidb;
     private static final String OP_DELETE = "Delete";
 
     public TidbBinlogRecordParser(
-            boolean caseSensitive, TypeMapping typeMapping, List<ComputedColumn> computedColumns)
- {
+            boolean caseSensitive, TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
         super(caseSensitive, typeMapping, computedColumns);
     }
 
@@ -70,8 +69,7 @@ package org.apache.paimon.flink.action.cdc.format.tidb;
                 processRecord(data, RowKind.INSERT, records);
                 break;
             case OP_UPDATE:
-                processRecord(mergeOldRecord(data, getBefore(operation)), RowKind.DELETE,
- records);
+                processRecord(mergeOldRecord(data, getBefore(operation)), RowKind.DELETE, records);
                 processRecord(data, RowKind.INSERT, records);
                 break;
             case OP_DELETE:
@@ -195,4 +193,4 @@ package org.apache.paimon.flink.action.cdc.format.tidb;
         }
         return columnValue;
     }
- }
+}
