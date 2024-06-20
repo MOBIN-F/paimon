@@ -36,9 +36,7 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import javax.annotation.Nullable;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -410,11 +408,11 @@ public class MySqlTypeUtils {
     /* Get type after the brackets are removed.*/
     public static String getShortType(String typeName) {
         int leftBracketIndex = typeName.indexOf(LEFT_BRACKETS);
-        return leftBracketIndex != -1 ?
-                typeName.substring(0, leftBracketIndex).trim().toUpperCase() + typeName.substring(typeName.indexOf(RIGHT_BRACKETS) + 1).toUpperCase() : typeName;
+        return leftBracketIndex != -1
+                ? typeName.substring(0, leftBracketIndex).trim().toUpperCase()
+                        + typeName.substring(typeName.indexOf(RIGHT_BRACKETS) + 1).toUpperCase()
+                : typeName;
     }
-
-
 
     public static JdbcToPaimonTypeVisitor toPaimonTypeVisitor() {
         return MySqlToPaimonTypeVisitor.INSTANCE;
