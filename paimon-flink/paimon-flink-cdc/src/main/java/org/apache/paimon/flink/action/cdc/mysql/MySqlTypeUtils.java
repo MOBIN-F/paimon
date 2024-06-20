@@ -18,6 +18,7 @@
 
 package org.apache.paimon.flink.action.cdc.mysql;
 
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.paimon.flink.action.cdc.JdbcToPaimonTypeVisitor;
 import org.apache.paimon.flink.action.cdc.TypeMapping;
 import org.apache.paimon.types.DataType;
@@ -157,11 +158,47 @@ public class MySqlTypeUtils {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static DataType toDataType(String mysqlFullType, TypeMapping typeMapping) {
+        Tuple3<String, Integer, Integer> typeInfo = getTypeInfo(mysqlFullType);
+//        return toDataType(
+//                typeInfo.f0,
+//                typeInfo.f1,
+//                typeInfo.f2,
+//                typeMapping);
         return toDataType(
-                MySqlTypeUtils.getShortType(mysqlFullType),
-                MySqlTypeUtils.getPrecision(mysqlFullType),
-                MySqlTypeUtils.getScale(mysqlFullType),
+                getShortType(mysqlFullType),
+                getPrecision(mysqlFullType),
+                getScale(mysqlFullType),
                 typeMapping);
+    }
+
+    public static Tuple3<String, Integer, Integer> getTypeInfo (String typeName) {
+        int leftBracketIndex = typeName.indexOf(LEFT_BRACKETS);
+        String shortType = leftBracketIndex != -1 ? typeName.substring(0, leftBracketIndex).trim().toUpperCase() : typeName.toUpperCase();
+        int length = 0;
+        int scale = 0;
+        boolean scaleType = isScaleType(shortType);
+        if (leftBracketIndex != -1 && scaleType) { //decimal (10, 2)
+
+            length = Integer.parseInt(
+                    typeName.substring(typeName.indexOf(LEFT_BRACKETS) + 1, typeName.indexOf(COMMA))
+                            .trim());
+            scale = Integer.parseInt(
+                    typeName.substring(
+                                    typeName.indexOf(COMMA) + 1, typeName.indexOf(RIGHT_BRACKETS))
+                            .trim());
+        } else if (leftBracketIndex != -1 && !scaleType && !isEnumType(shortType)
+                && !isSetType(shortType)) {  //varchar (10)
+            length = Integer.parseInt(
+                    typeName.substring(
+                                    typeName.indexOf(LEFT_BRACKETS) + 1,
+                                    typeName.indexOf(RIGHT_BRACKETS))
+                            .trim());
+        } else if (isDecimalType(shortType)) {  //INT
+                length = 38;
+                scale = 18;
+        }
+        return Tuple3.of(shortType, length, scale);
+
     }
 
     public static DataType toDataType(
@@ -354,45 +391,81 @@ public class MySqlTypeUtils {
         return objectWriter.writeValueAsString(geometryInfo);
     }
 
-    public static boolean isScaleType(String typeName) {
-        return HAVE_SCALE_LIST.stream()
-                .anyMatch(type -> getShortType(typeName).toUpperCase().startsWith(type));
+    public static boolean isScaleType(String shortType) {
+        switch (shortType) {
+            case DECIMAL:
+            case DECIMAL_UNSIGNED:
+            case DECIMAL_UNSIGNED_ZEROFILL:
+            case NUMERIC:
+            case NUMERIC_UNSIGNED:
+            case NUMERIC_UNSIGNED_ZEROFILL:
+            case DOUBLE:
+            case DOUBLE_UNSIGNED:
+            case DOUBLE_UNSIGNED_ZEROFILL:
+            case DOUBLE_PRECISION:
+            case DOUBLE_PRECISION_UNSIGNED:
+            case DOUBLE_PRECISION_UNSIGNED_ZEROFILL:
+            case REAL:
+            case REAL_UNSIGNED:
+            case REAL_UNSIGNED_ZEROFILL:
+            case FIXED:
+            case FIXED_UNSIGNED:
+            case FIXED_UNSIGNED_ZEROFILL:
+            case FLOAT:
+            case FLOAT_UNSIGNED:
+            case FLOAT_UNSIGNED_ZEROFILL:
+                return true;
+            default:
+                return false;
+        }
+//        return HAVE_SCALE_LIST.stream()
+//                .anyMatch(typeName::startsWith);
     }
 
-    public static boolean isEnumType(String typeName) {
-        return typeName.toUpperCase().startsWith(ENUM);
+    public static boolean isEnumType(String shortType) {
+        return shortType.equals(ENUM);
     }
 
-    public static boolean isSetType(String typeName) {
-        return typeName.toUpperCase().startsWith(SET);
+    public static boolean isSetType(String shortType) {
+        return shortType.equals(SET);
     }
 
-    private static boolean isDecimalType(String typeName) {
-        return MAP_TO_DECIMAL_TYPES.stream()
-                .anyMatch(type -> getShortType(typeName).toUpperCase().startsWith(type));
+    private static boolean isDecimalType(String shortType) {
+        switch (shortType) {
+            case NUMERIC:
+            case NUMERIC_UNSIGNED:
+            case NUMERIC_UNSIGNED_ZEROFILL:
+            case FIXED:
+            case FIXED_UNSIGNED:
+            case FIXED_UNSIGNED_ZEROFILL:
+            case DECIMAL:
+            case DECIMAL_UNSIGNED:
+            case DECIMAL_UNSIGNED_ZEROFILL:
+                return true;
+            default:
+                return false;
+        }
+//        return MAP_TO_DECIMAL_TYPES.stream()
+//                .anyMatch(typeName::startsWith);
     }
 
     /* Get type after the brackets are removed.*/
     public static String getShortType(String typeName) {
-
-        if (typeName.contains(LEFT_BRACKETS) && typeName.contains(RIGHT_BRACKETS)) {
-            return typeName.substring(0, typeName.indexOf(LEFT_BRACKETS)).trim()
-                    + typeName.substring(typeName.indexOf(RIGHT_BRACKETS) + 1);
-        } else {
-            return typeName;
-        }
+        int leftBracketIndex = typeName.indexOf(LEFT_BRACKETS);
+        return leftBracketIndex != -1 ? typeName.substring(0, leftBracketIndex).trim() : typeName;
     }
 
     public static int getPrecision(String typeName) {
+        boolean scaleType = isScaleType(typeName);
         if (typeName.contains(LEFT_BRACKETS)
                 && typeName.contains(RIGHT_BRACKETS)
-                && isScaleType(typeName)) {
+                && scaleType) {
             return Integer.parseInt(
                     typeName.substring(typeName.indexOf(LEFT_BRACKETS) + 1, typeName.indexOf(COMMA))
                             .trim());
         } else if ((typeName.contains(LEFT_BRACKETS)
                 && typeName.contains(RIGHT_BRACKETS)
-                && !isScaleType(typeName)
+                && !scaleType
                 && !isEnumType(typeName)
                 && !isSetType(typeName))) {
             return Integer.parseInt(
