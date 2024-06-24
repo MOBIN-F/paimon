@@ -70,6 +70,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.apache.paimon.flink.action.cdc.TypeMapping.TypeMappingMode.TO_NULLABLE;
 import static org.apache.paimon.flink.action.cdc.TypeMapping.TypeMappingMode.TO_STRING;
@@ -242,7 +244,6 @@ public class PostgresRecordParser
 
         Map<String, String> after = extractRow(root.payload().after());
         if (!after.isEmpty()) {
-            after = mapKeyCaseConvert(after, caseSensitive, recordKeyDuplicateErrMsg(after));
             List<DataField> fields = extractFields(root.schema(), root.payload().after());
             records.add(
                     new RichCdcMultiplexRecord(
