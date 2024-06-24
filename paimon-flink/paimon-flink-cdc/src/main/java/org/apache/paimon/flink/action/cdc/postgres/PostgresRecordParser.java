@@ -106,7 +106,7 @@ public class PostgresRecordParser
             List<ComputedColumn> computedColumns,
             TypeMapping typeMapping,
             CdcMetadataConverter[] metadataConverters,
-            TableSchema schema) {
+            TableSchema paimonSchema) {
         this.computedColumns = computedColumns;
         this.typeMapping = typeMapping;
         this.metadataConverters = metadataConverters;
