@@ -27,12 +27,6 @@ under the License.
     </thead>
     <tbody>
         <tr>
-            <td><h5>changelog-producer.lookup-wait</h5></td>
-            <td style="word-wrap: break-word;">true</td>
-            <td>Boolean</td>
-            <td>When changelog-producer is set to LOOKUP, commit will wait for changelog generation by lookup.</td>
-        </tr>
-        <tr>
             <td><h5>end-input.watermark</h5></td>
             <td style="word-wrap: break-word;">(none)</td>
             <td>Long</td>
@@ -85,6 +79,12 @@ under the License.
             <td style="word-wrap: break-word;">5</td>
             <td>Integer</td>
             <td>If the pending snapshot count exceeds the threshold, lookup operator will refresh the table in sync.</td>
+        </tr>
+        <tr>
+            <td><h5>partition.end-input-to-done</h5></td>
+            <td style="word-wrap: break-word;">false</td>
+            <td>Boolean</td>
+            <td>Whether mark the done status to indicate that the data is ready when end input.</td>
         </tr>
         <tr>
             <td><h5>partition.idle-time-to-done</h5></td>
