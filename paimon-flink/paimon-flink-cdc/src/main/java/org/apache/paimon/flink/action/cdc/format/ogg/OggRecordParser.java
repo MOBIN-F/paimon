@@ -58,8 +58,12 @@ public class OggRecordParser extends RecordParser {
     private static final String OP_INSERT = "I";
     private static final String OP_DELETE = "D";
 
-    public OggRecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
-        super(typeMapping, computedColumns);
+    public OggRecordParser(
+            TypeMapping typeMapping,
+            List<ComputedColumn> computedColumns,
+            String includingTables,
+            String excludingTables) {
+        super(typeMapping, computedColumns, includingTables, excludingTables);
     }
 
     @Override

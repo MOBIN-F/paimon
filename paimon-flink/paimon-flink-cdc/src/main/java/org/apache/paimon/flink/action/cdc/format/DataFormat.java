@@ -59,8 +59,11 @@ public enum DataFormat {
      * @return A new instance of {@link RecordParser}.
      */
     public RecordParser createParser(
-            TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
-        return parser.createParser(typeMapping, computedColumns);
+            TypeMapping typeMapping,
+            List<ComputedColumn> computedColumns,
+            String includingTables,
+            String excludingTables) {
+        return parser.createParser(typeMapping, computedColumns, includingTables, excludingTables);
     }
 
     public static DataFormat fromConfigString(String format) {

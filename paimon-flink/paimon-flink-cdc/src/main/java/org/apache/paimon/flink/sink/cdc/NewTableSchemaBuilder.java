@@ -40,7 +40,7 @@ public class NewTableSchemaBuilder implements Serializable {
     private final List<String> primaryKeys;
     private final CdcMetadataConverter[] metadataConverters;
     private List<String> computedColumnArgs;
-    private List<ComputedColumn> computedColumns;
+    private List<ComputedColumn> computedColumns = Collections.emptyList();
 
     public NewTableSchemaBuilder(
             Map<String, String> tableConfig,
@@ -57,6 +57,18 @@ public class NewTableSchemaBuilder implements Serializable {
         this.computedColumnArgs = computedColumnArgs;
     }
 
+    public List<ComputedColumn> getComputedColumns() {
+        return computedColumns;
+    }
+
+    public List<String> getPartitionKeys() {
+        return partitionKeys;
+    }
+
+    public List<String> getPrimaryKeys() {
+        return primaryKeys;
+    }
+
     public Optional<Schema> build(RichCdcMultiplexRecord record) {
         Schema sourceSchema =
                 new Schema(
@@ -66,7 +78,9 @@ public class NewTableSchemaBuilder implements Serializable {
                         Collections.emptyMap(),
                         null);
 
-        computedColumns = buildComputedColumns(computedColumnArgs, sourceSchema.fields());
+        if (!computedColumnArgs.isEmpty()) {
+            computedColumns = buildComputedColumns(computedColumnArgs, sourceSchema.fields());
+        }
 
         return Optional.of(
                 buildPaimonSchema(

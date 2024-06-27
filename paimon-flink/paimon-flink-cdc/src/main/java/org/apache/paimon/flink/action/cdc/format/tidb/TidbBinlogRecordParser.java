@@ -62,18 +62,26 @@ public class TidbBinlogRecordParser extends RecordParser {
     private static final String OP_INSERT = "INSERT";
     private static final String OP_DELETE = "DELETE";
 
+    private String includingTables;
+    private String excludingTables;
+
     public final int DELETE_VALUE = 2;
     public final int UPDATE_VALUE = 1;
 
-    public TidbBinlogRecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
-        super(typeMapping, computedColumns);
+    public TidbBinlogRecordParser(
+            TypeMapping typeMapping,
+            List<ComputedColumn> computedColumns,
+            String includingTables,
+            String excludingTables) {
+        super(typeMapping, computedColumns, includingTables, excludingTables);
+        this.includingTables = includingTables;
+        this.excludingTables = excludingTables;
     }
 
     @Override
     protected List<RichCdcMultiplexRecord> extractRecords() {
         List<RichCdcMultiplexRecord> records = new ArrayList<>();
         for (JsonNode jsonNode : root) {
-            JsonNode data = jsonNode.get(FIELD_AFTER);
             String operation = jsonNode.get(FIELD_TYPE).asText();
             switch (operation) {
                 case OP_INSERT:
@@ -215,6 +223,9 @@ public class TidbBinlogRecordParser extends RecordParser {
                 // tableName.startsWith("uoc_order_main"))) {
                 //                    continue;
                 //                }
+                if (!shouldSynchronizeCurrentTable(tableName)) {
+                    continue;
+                }
                 List<BinLog.ColumnInfo> columnInfoList = table.getColumnInfoList();
                 List<BinLog.TableMutation> mutationsList = table.getMutationsList();
                 List<String> primaryKeys = new ArrayList<>();

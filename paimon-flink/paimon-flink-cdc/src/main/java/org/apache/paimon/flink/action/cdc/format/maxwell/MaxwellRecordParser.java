@@ -50,8 +50,12 @@ public class MaxwellRecordParser extends RecordParser {
     private static final String OP_UPDATE = "update";
     private static final String OP_DELETE = "delete";
 
-    public MaxwellRecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
-        super(typeMapping, computedColumns);
+    public MaxwellRecordParser(
+            TypeMapping typeMapping,
+            List<ComputedColumn> computedColumns,
+            String includingTables,
+            String excludingTables) {
+        super(typeMapping, computedColumns, includingTables, excludingTables);
     }
 
     @Override

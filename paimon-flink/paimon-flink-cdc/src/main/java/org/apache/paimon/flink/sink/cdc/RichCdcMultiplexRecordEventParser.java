@@ -111,6 +111,15 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
                 : Collections.emptyList();
     }
 
+    @Nullable
+    public NewTableSchemaBuilder getSchemaBuilder() {
+        return schemaBuilder;
+    }
+
+    public RichCdcMultiplexRecord getRecord() {
+        return record;
+    }
+
     @Override
     public Optional<Schema> parseNewTable() {
         if (shouldCreateCurrentTable()) {

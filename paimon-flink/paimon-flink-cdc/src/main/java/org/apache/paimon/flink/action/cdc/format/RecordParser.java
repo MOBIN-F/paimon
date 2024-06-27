@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -73,12 +74,20 @@ public abstract class RecordParser
     protected static final String FIELD_DATABASE = "database";
     protected final TypeMapping typeMapping;
     protected final List<ComputedColumn> computedColumns;
+    protected final String includingTables;
+    protected final String excludingTables;
 
     protected JsonNode root;
 
-    public RecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
+    public RecordParser(
+            TypeMapping typeMapping,
+            List<ComputedColumn> computedColumns,
+            String includingTables,
+            String excludingTables) {
         this.typeMapping = typeMapping;
         this.computedColumns = computedColumns;
+        this.includingTables = includingTables;
+        this.excludingTables = excludingTables;
     }
 
     @Nullable
@@ -108,6 +117,39 @@ public abstract class RecordParser
             logInvalidSourceRecord(record);
             throw e;
         }
+    }
+
+    public boolean shouldSynchronizeCurrentTable(String currentTable) {
+        Pattern includingPattern = Pattern.compile(includingTables);
+        Pattern excludingPattern =
+                excludingTables == null ? null : Pattern.compile(excludingTables);
+        if (currentTable == null) {
+            return true;
+        }
+
+        if (includingTables.contains(currentTable)) {
+            return true;
+        }
+        if (excludingTables.contains(currentTable)) {
+            return false;
+        }
+
+        boolean shouldSynchronize = true;
+        if (includingPattern != null) {
+            shouldSynchronize = includingPattern.matcher(currentTable).matches();
+        }
+        if (excludingPattern != null) {
+            shouldSynchronize =
+                    shouldSynchronize && !excludingPattern.matcher(currentTable).matches();
+        }
+        if (!shouldSynchronize) {
+            LOG.debug(
+                    "Source table {} won't be synchronized because it was excluded. ",
+                    currentTable);
+            return false;
+        }
+
+        return true;
     }
 
     protected abstract List<RichCdcMultiplexRecord> extractRecords();

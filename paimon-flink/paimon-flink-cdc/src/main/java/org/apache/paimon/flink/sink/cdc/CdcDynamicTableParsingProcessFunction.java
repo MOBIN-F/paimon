@@ -20,6 +20,7 @@ package org.apache.paimon.flink.sink.cdc;
 
 import org.apache.paimon.catalog.Catalog;
 import org.apache.paimon.catalog.Identifier;
+import org.apache.paimon.flink.action.cdc.ComputedColumn;
 import org.apache.paimon.types.DataField;
 
 import org.apache.flink.api.common.typeinfo.TypeHint;
@@ -32,7 +33,9 @@ import org.apache.flink.util.OutputTag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A {@link ProcessFunction} to parse CDC change event to either a list of {@link DataField}s or
@@ -105,15 +108,52 @@ public class CdcDynamicTableParsingProcessFunction<T> extends ProcessFunction<T,
                                         e);
                             }
                         });
+        RichCdcMultiplexRecordEventParser parserNew = (RichCdcMultiplexRecordEventParser) parser;
+        if (parserNew.getSchemaBuilder().getComputedColumns() != null
+                && !parserNew.getSchemaBuilder().getComputedColumns().isEmpty()) {
+            NewTableSchemaBuilder schemaBuilder = parserNew.getSchemaBuilder();
+            List<DataField> fieldsOld = parserNew.getRecord().fields();
 
-        List<DataField> schemaChange = parser.parseSchemaChange();
+            List<DataField> fieldsNew = new ArrayList<>();
+            List<CdcRecord> cdcRecords = parser.parseRecords();
+            List<ComputedColumn> computedColumns = schemaBuilder.getComputedColumns();
+
+            for (int i = 0; i < cdcRecords.size(); i++) { // one element
+                CdcRecord cdcRecord = cdcRecords.get(i);
+                Map<String, String> fields = cdcRecord.fields();
+                fieldsNew.addAll(fieldsOld);
+                computedColumns.forEach(
+                        computedColumn -> {
+                            fieldsNew.add(
+                                    new DataField(
+                                            fields.size(),
+                                            computedColumn.columnName(),
+                                            computedColumn.columnType()));
+                            fields.put(
+                                    computedColumn.columnName(),
+                                    computedColumn.eval(
+                                            fields.get(computedColumn.fieldReference())));
+                        });
+                RichCdcMultiplexRecord richCdcMultiplexRecord =
+                        new RichCdcMultiplexRecord(
+                                database,
+                                tableName,
+                                fieldsNew,
+                                schemaBuilder.getPrimaryKeys(),
+                                cdcRecord);
+                parserNew.setRawEvent(richCdcMultiplexRecord);
+            }
+        }
+
+        List<DataField> schemaChange = parserNew.parseSchemaChange();
         if (!schemaChange.isEmpty()) {
             context.output(
                     DYNAMIC_SCHEMA_CHANGE_OUTPUT_TAG,
                     Tuple2.of(Identifier.create(database, tableName), schemaChange));
         }
 
-        parser.parseRecords()
+        parserNew
+                .parseRecords()
                 .forEach(
                         record ->
                                 context.output(
