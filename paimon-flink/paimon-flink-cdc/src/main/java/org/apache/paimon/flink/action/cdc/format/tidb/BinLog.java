@@ -18,6 +18,7 @@
 
 package org.apache.paimon.flink.action.cdc.format.tidb;
 
+/** BinLog */
 public final class BinLog {
     private BinLog() {}
 

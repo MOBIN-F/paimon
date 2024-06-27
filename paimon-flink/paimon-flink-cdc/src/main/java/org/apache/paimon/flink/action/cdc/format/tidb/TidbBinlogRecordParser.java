@@ -49,6 +49,7 @@ import java.util.stream.StreamSupport;
 import static org.apache.paimon.utils.JsonSerdeUtil.getNodeAs;
 import static org.apache.paimon.utils.JsonSerdeUtil.isNull;
 
+/** TidbBinlogRecordParser. */
 public class TidbBinlogRecordParser extends RecordParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(TidbBinlogRecordParser.class);
