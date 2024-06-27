@@ -75,7 +75,6 @@ public class KafkaCanalSyncTableActionITCase extends KafkaSyncTableActionITCase 
         final String topic = "schema_evolution";
         createTestTopic(topic, 1, 1);
         writeRecordsToKafka(topic, "kafka/canal/table/%s/canal-data-1.txt", sourceDir);
-
         Map<String, String> kafkaConfig = getBasicKafkaConfig();
         kafkaConfig.put(VALUE_FORMAT.key(), "canal-json");
         kafkaConfig.put(TOPIC.key(), topic);

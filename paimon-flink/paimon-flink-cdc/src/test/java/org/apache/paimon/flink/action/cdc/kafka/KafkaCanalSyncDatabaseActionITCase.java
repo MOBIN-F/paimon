@@ -640,4 +640,111 @@ public class KafkaCanalSyncDatabaseActionITCase extends KafkaActionITCaseBase {
                 rowType2,
                 Collections.singletonList("k"));
     }
+
+    @Test
+    // @Timeout(60)
+    public void testComputedColumn() throws Exception {
+        String topic = "computed_column";
+        createTestTopic(topic, 1, 1);
+        writeRecordsToKafka(topic, "kafka/canal/table/computedcolumn/canal-data-1.txt");
+
+        Map<String, String> kafkaConfig = getBasicKafkaConfig();
+        kafkaConfig.put(VALUE_FORMAT.key(), "canal-json");
+        kafkaConfig.put(TOPIC.key(), topic);
+        KafkaSyncDatabaseAction action =
+                syncDatabaseActionBuilder(kafkaConfig)
+                        .withPartitionKeys("_year")
+                        .withPrimaryKeys("_id", "_year")
+                        .withTableConfig(getBasicTableConfig())
+                        .withComputedColumnArgs("_year=year(_date)")
+                        .build();
+        runActionWithDefaultEnv(action);
+
+        waitingTables("test_computed_column");
+        FileStoreTable fileStoreTable = getFileStoreTable("test_computed_column");
+
+        RowType rowType =
+                RowType.of(
+                        new DataType[] {
+                            DataTypes.INT().notNull(), DataTypes.DATE(), DataTypes.INT().notNull()
+                        },
+                        new String[] {"_id", "_date", "_year"});
+        waitForResult(
+                Collections.singletonList("+I[1, 19439, 2023]"),
+                fileStoreTable,
+                rowType,
+                Arrays.asList("_id", "_year"));
+    }
+
+    @Test
+    // @Timeout(60)
+    public void testComputedColumn1() throws Exception {
+        String topic = "computed_column";
+        createTestTopic(topic, 1, 1);
+        writeRecordsToKafka(topic, "kafka/canal/table/computedcolumn/canal-data-1.txt");
+
+        Map<String, String> kafkaConfig = getBasicKafkaConfig();
+        kafkaConfig.put(VALUE_FORMAT.key(), "canal-json");
+        kafkaConfig.put(TOPIC.key(), topic);
+        KafkaSyncDatabaseAction action =
+                syncDatabaseActionBuilder(kafkaConfig)
+                        .withPartitionKeys("_date")
+                        .withPrimaryKeys("_id", "_date")
+                        .withTableConfig(getBasicTableConfig())
+                        .build();
+        runActionWithDefaultEnv(action);
+
+        waitingTables("test_computed_column");
+        FileStoreTable fileStoreTable = getFileStoreTable("test_computed_column");
+
+        RowType rowType =
+                RowType.of(
+                        new DataType[] {DataTypes.INT().notNull(), DataTypes.DATE().notNull()},
+                        new String[] {"_id", "_date"});
+        waitForResult(
+                Collections.singletonList("+I[1, 19439]"),
+                fileStoreTable,
+                rowType,
+                Arrays.asList("_id", "_date"));
+    }
+
+    @Test
+    @Timeout(60)
+    public void testSpecifyKeys1() throws Exception {
+        final String topic = "specify-keys";
+        createTestTopic(topic, 1, 1);
+        writeRecordsToKafka(topic, "kafka/canal/database/specify-keys/canal-data-1.txt");
+
+        Map<String, String> kafkaConfig = getBasicKafkaConfig();
+        kafkaConfig.put(VALUE_FORMAT.key(), "canal-json");
+        kafkaConfig.put(TOPIC.key(), topic);
+
+        KafkaSyncDatabaseAction action =
+                syncDatabaseActionBuilder(kafkaConfig)
+                        .withTableConfig(getBasicTableConfig())
+                        .withPartitionKeys("part")
+                        .withPrimaryKeys("k", "part")
+                        .build();
+        runActionWithDefaultEnv(action);
+
+        waitingTables("t1", "t2");
+
+        FileStoreTable table1 = getFileStoreTable("t1");
+        assertThat(table1.partitionKeys()).containsExactly("part");
+        assertThat(table1.primaryKeys()).containsExactly("k", "part");
+
+        RowType rowType1 =
+                RowType.of(
+                        new DataType[] {
+                            DataTypes.INT().notNull(),
+                            DataTypes.INT().notNull(),
+                            DataTypes.VARCHAR(10),
+                        },
+                        new String[] {"k", "part", "v1"});
+        waitForResult(
+                Collections.singletonList("+I[1, 1, A]"),
+                table1,
+                rowType1,
+                Arrays.asList("k", "part"));
+    }
 }

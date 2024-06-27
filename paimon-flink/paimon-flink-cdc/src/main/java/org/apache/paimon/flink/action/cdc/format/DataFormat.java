@@ -25,6 +25,7 @@ import org.apache.paimon.flink.action.cdc.format.debezium.DebeziumRecordParser;
 import org.apache.paimon.flink.action.cdc.format.json.JsonRecordParser;
 import org.apache.paimon.flink.action.cdc.format.maxwell.MaxwellRecordParser;
 import org.apache.paimon.flink.action.cdc.format.ogg.OggRecordParser;
+import org.apache.paimon.flink.action.cdc.format.tidb.TidbBinlogRecordParser;
 
 import java.util.List;
 
@@ -40,7 +41,8 @@ public enum DataFormat {
     OGG_JSON(OggRecordParser::new),
     MAXWELL_JSON(MaxwellRecordParser::new),
     DEBEZIUM_JSON(DebeziumRecordParser::new),
-    JSON(JsonRecordParser::new);
+    JSON(JsonRecordParser::new),
+    TIDB_BINLOG(TidbBinlogRecordParser::new);
     // Add more data formats here if needed
 
     private final RecordParserFactory parser;

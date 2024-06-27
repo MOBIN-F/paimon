@@ -19,6 +19,7 @@
 package org.apache.paimon.flink.sink.cdc;
 
 import org.apache.paimon.flink.action.cdc.CdcMetadataConverter;
+import org.apache.paimon.flink.action.cdc.ComputedColumn;
 import org.apache.paimon.schema.Schema;
 
 import java.io.Serializable;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.buildPaimonSchema;
+import static org.apache.paimon.flink.action.cdc.ComputedColumnUtils.buildComputedColumns;
 
 /** Build schema for new table found in database synchronization. */
 public class NewTableSchemaBuilder implements Serializable {
@@ -37,18 +39,22 @@ public class NewTableSchemaBuilder implements Serializable {
     private final List<String> partitionKeys;
     private final List<String> primaryKeys;
     private final CdcMetadataConverter[] metadataConverters;
+    private List<String> computedColumnArgs;
+    private List<ComputedColumn> computedColumns;
 
     public NewTableSchemaBuilder(
             Map<String, String> tableConfig,
             boolean caseSensitive,
             List<String> partitionKeys,
             List<String> primaryKeys,
-            CdcMetadataConverter[] metadataConverters) {
+            CdcMetadataConverter[] metadataConverters,
+            List<String> computedColumnArgs) {
         this.tableConfig = tableConfig;
         this.caseSensitive = caseSensitive;
         this.metadataConverters = metadataConverters;
         this.partitionKeys = partitionKeys;
         this.primaryKeys = primaryKeys;
+        this.computedColumnArgs = computedColumnArgs;
     }
 
     public Optional<Schema> build(RichCdcMultiplexRecord record) {
@@ -59,12 +65,15 @@ public class NewTableSchemaBuilder implements Serializable {
                         record.primaryKeys(),
                         Collections.emptyMap(),
                         null);
+
+        computedColumns = buildComputedColumns(computedColumnArgs, sourceSchema.fields());
+
         return Optional.of(
                 buildPaimonSchema(
                         record.tableName(),
                         partitionKeys,
                         primaryKeys,
-                        Collections.emptyList(),
+                        computedColumns,
                         tableConfig,
                         sourceSchema,
                         metadataConverters,

@@ -35,7 +35,6 @@ import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -54,6 +53,8 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
     protected List<String> primaryKeys = new ArrayList<>();
     @Nullable protected String excludingTables;
     protected List<FileStoreTable> tables = new ArrayList<>();
+    protected List<String> computedColumnArgs = new ArrayList<>();
+    protected List<ComputedColumn> computedColumns = new ArrayList<>();
 
     public SyncDatabaseActionBase(
             String warehouse,
@@ -115,6 +116,11 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
         return this;
     }
 
+    public SyncDatabaseActionBase withComputedColumnArgs(List<String> computedColumnArgs) {
+        this.computedColumnArgs = computedColumnArgs;
+        return this;
+    }
+
     @Override
     protected void validateCaseSensitivity() {
         AbstractCatalog.validateCaseInsensitive(caseSensitive, "Database", database);
@@ -124,15 +130,25 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
 
     @Override
     protected FlatMapFunction<CdcSourceRecord, RichCdcMultiplexRecord> recordParse() {
-        return syncJobHandler.provideRecordParser(
-                Collections.emptyList(), typeMapping, metadataConverters);
+        return syncJobHandler.provideRecordParser(computedColumns, typeMapping, metadataConverters);
+    }
+
+    @Override
+    protected void beforeBuildingSourceSink() throws Exception {
+        super.beforeBuildingSourceSink();
     }
 
     @Override
     protected EventParser.Factory<RichCdcMultiplexRecord> buildEventParserFactory() {
         NewTableSchemaBuilder schemaBuilder =
                 new NewTableSchemaBuilder(
-                        tableConfig, caseSensitive, partitionKeys, primaryKeys, metadataConverters);
+                        tableConfig,
+                        caseSensitive,
+                        partitionKeys,
+                        primaryKeys,
+                        metadataConverters,
+                        computedColumnArgs);
+
         Pattern includingPattern = Pattern.compile(includingTables);
         Pattern excludingPattern =
                 excludingTables == null ? null : Pattern.compile(excludingTables);
