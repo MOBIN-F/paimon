@@ -83,7 +83,7 @@ public class KafkaCanalSyncDatabaseActionITCase extends KafkaActionITCaseBase {
     }
 
     @Test
-    //   @Timeout(60)
+    @Timeout(60)
     public void testSchemaEvolutionOneTopic() throws Exception {
         final String topic = "schema_evolution";
         boolean writeOne = true;
@@ -642,7 +642,7 @@ public class KafkaCanalSyncDatabaseActionITCase extends KafkaActionITCaseBase {
     }
 
     @Test
-    // @Timeout(60)
+    @Timeout(60)
     public void testComputedColumn() throws Exception {
         String topic = "computed_column";
         createTestTopic(topic, 1, 1);
@@ -677,7 +677,7 @@ public class KafkaCanalSyncDatabaseActionITCase extends KafkaActionITCaseBase {
     }
 
     @Test
-    // @Timeout(60)
+    @Timeout(60)
     public void testComputedColumn1() throws Exception {
         String topic = "computed_column";
         createTestTopic(topic, 1, 1);
