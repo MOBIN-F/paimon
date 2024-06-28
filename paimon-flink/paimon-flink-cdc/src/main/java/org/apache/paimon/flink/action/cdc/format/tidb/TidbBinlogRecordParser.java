@@ -42,7 +42,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -63,11 +69,8 @@ public class TidbBinlogRecordParser extends RecordParser {
     private static final String OP_INSERT = "INSERT";
     private static final String OP_DELETE = "DELETE";
 
-    private String includingTables;
-    private String excludingTables;
-
-    public final int DELETE_VALUE = 2;
-    public final int UPDATE_VALUE = 1;
+    public static final int DELETE_VALUE = 2;
+    public static final int UPDATE_VALUE = 1;
 
     public TidbBinlogRecordParser(
             TypeMapping typeMapping,
@@ -75,8 +78,6 @@ public class TidbBinlogRecordParser extends RecordParser {
             String includingTables,
             String excludingTables) {
         super(typeMapping, computedColumns, includingTables, excludingTables);
-        this.includingTables = includingTables;
-        this.excludingTables = excludingTables;
     }
 
     @Override

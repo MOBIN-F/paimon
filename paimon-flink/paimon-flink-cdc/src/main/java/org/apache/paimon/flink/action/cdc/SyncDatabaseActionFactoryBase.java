@@ -25,7 +25,14 @@ import org.apache.paimon.flink.action.MultipleParameterToolAdapter;
 import java.util.ArrayList;
 import java.util.Optional;
 
-import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.*;
+import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.COMPUTED_COLUMN;
+import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.EXCLUDING_TABLES;
+import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.INCLUDING_TABLES;
+import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.PARTITION_KEYS;
+import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.PRIMARY_KEYS;
+import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.TABLE_PREFIX;
+import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.TABLE_SUFFIX;
+import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.TYPE_MAPPING;
 
 /** Base {@link ActionFactory} for synchronizing into database. */
 public abstract class SyncDatabaseActionFactoryBase<T extends SyncDatabaseActionBase>
