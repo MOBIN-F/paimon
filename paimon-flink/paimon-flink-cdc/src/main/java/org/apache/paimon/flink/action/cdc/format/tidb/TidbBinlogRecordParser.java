@@ -54,6 +54,7 @@ import java.util.stream.StreamSupport;
 
 import static org.apache.paimon.utils.JsonSerdeUtil.getNodeAs;
 import static org.apache.paimon.utils.JsonSerdeUtil.isNull;
+import static org.apache.paimon.utils.Preconditions.checkArgument;
 
 /** TidbBinlogRecordParser. */
 public class TidbBinlogRecordParser extends RecordParser {
@@ -78,6 +79,7 @@ public class TidbBinlogRecordParser extends RecordParser {
             String includingTables,
             String excludingTables) {
         super(typeMapping, computedColumns, includingTables, excludingTables);
+        checkArgument(!includingTables.equals(".*"), "includingTables not set '.*'");
     }
 
     @Override
@@ -219,13 +221,9 @@ public class TidbBinlogRecordParser extends RecordParser {
             List<JsonNode> arrayData = new ArrayList<>();
 
             for (BinLog.Table table : tablesList) {
-                String dbName = table.getSchemaName();
                 String tableName = table.getTableName();
-                //                if (!(dbName.equals("uniorder") &&
-                // tableName.startsWith("uoc_order_main"))) {
-                //                    continue;
-                //                }
-                if (!shouldSynchronizeCurrentTable(tableName)) {
+                if (!shouldSynchronizeCurrentTable(tableName)
+                        || tableName.contentEquals("history")) {
                     continue;
                 }
                 List<BinLog.ColumnInfo> columnInfoList = table.getColumnInfoList();
@@ -241,11 +239,7 @@ public class TidbBinlogRecordParser extends RecordParser {
                 }
                 for (BinLog.TableMutation tableMutation : mutationsList) {
                     Map<String, Object> map = new HashMap<>();
-
-                    //                    List<Map<String, Object>> dataList = new ArrayList<>();
                     Map<String, Object> dataMap = new HashMap<>();
-
-                    //                    List<Map<String, Object>> olDdataList = new ArrayList<>();
                     Map<String, Object> beforeChangeMap = new HashMap<>();
 
                     map.put(FIELD_DATABASE, table.getSchemaName());

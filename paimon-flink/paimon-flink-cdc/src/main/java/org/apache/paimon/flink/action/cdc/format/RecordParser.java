@@ -44,10 +44,12 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -76,6 +78,8 @@ public abstract class RecordParser
     protected final List<ComputedColumn> computedColumns;
     protected final String includingTables;
     protected final String excludingTables;
+    private final Set<String> includedTables = new HashSet<>();
+    private final Set<String> excludedTables = new HashSet<>();
 
     protected JsonNode root;
 
@@ -120,6 +124,8 @@ public abstract class RecordParser
     }
 
     public boolean shouldSynchronizeCurrentTable(String currentTable) {
+        // In case the record is incomplete, we let the null value pass validation
+        // and handle the null value when we really need it
         Pattern includingPattern = Pattern.compile(includingTables);
         Pattern excludingPattern =
                 excludingTables == null ? null : Pattern.compile(excludingTables);
@@ -127,10 +133,10 @@ public abstract class RecordParser
             return true;
         }
 
-        if (includingTables.contains(currentTable)) {
+        if (includedTables.contains(currentTable)) {
             return true;
         }
-        if (excludingTables.contains(currentTable)) {
+        if (excludedTables.contains(currentTable)) {
             return false;
         }
 
@@ -146,9 +152,11 @@ public abstract class RecordParser
             LOG.debug(
                     "Source table {} won't be synchronized because it was excluded. ",
                     currentTable);
+            excludedTables.add(currentTable);
             return false;
         }
 
+        includedTables.add(currentTable);
         return true;
     }
 

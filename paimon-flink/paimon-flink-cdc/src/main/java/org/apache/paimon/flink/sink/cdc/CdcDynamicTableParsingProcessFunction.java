@@ -137,7 +137,7 @@ public class CdcDynamicTableParsingProcessFunction<T> extends ProcessFunction<T,
                 RichCdcMultiplexRecord richCdcMultiplexRecord =
                         new RichCdcMultiplexRecord(
                                 database,
-                                tableName,
+                                ((RichCdcMultiplexRecord) raw).tableName(),
                                 fieldsNew,
                                 schemaBuilder.getPrimaryKeys(),
                                 cdcRecord);
