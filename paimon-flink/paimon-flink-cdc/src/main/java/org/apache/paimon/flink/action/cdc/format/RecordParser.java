@@ -81,6 +81,11 @@ public abstract class RecordParser
         this.computedColumns = computedColumns;
     }
 
+    public RecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns, String includeTable) {
+        this.typeMapping = typeMapping;
+        this.computedColumns = computedColumns;
+    }
+
     @Nullable
     public Schema buildSchema(CdcSourceRecord record) {
         try {

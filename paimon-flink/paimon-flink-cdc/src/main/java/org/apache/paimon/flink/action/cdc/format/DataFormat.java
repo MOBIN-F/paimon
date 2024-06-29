@@ -61,6 +61,11 @@ public enum DataFormat {
         return parser.createParser(typeMapping, computedColumns);
     }
 
+    public RecordParser createParser(
+            TypeMapping typeMapping, List<ComputedColumn> computedColumns, String includeTable) {
+        return parser.createParser(typeMapping, computedColumns, includeTable);
+    }
+
     public static DataFormat fromConfigString(String format) {
         try {
             return DataFormat.valueOf(format.replace("-", "_").toUpperCase());

@@ -41,5 +41,8 @@ public interface RecordParserFactory {
      * @param computedColumns List of computed columns to be considered by the parser.
      * @return A new instance of {@link RecordParser}.
      */
-    RecordParser createParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns);
+    default RecordParser createParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
+        return createParser(typeMapping, computedColumns, null);
+    }
+    RecordParser createParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns, String includeTable);
 }

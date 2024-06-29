@@ -88,6 +88,11 @@ public class CanalRecordParser extends RecordParser {
         super(typeMapping, computedColumns);
     }
 
+    public CanalRecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns, String includeTable) {
+        super(typeMapping, computedColumns, includeTable);
+    }
+
+
     @Override
     public List<RichCdcMultiplexRecord> extractRecords() {
         if (isDDL()) {

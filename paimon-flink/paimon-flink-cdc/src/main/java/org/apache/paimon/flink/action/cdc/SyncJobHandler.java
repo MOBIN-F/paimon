@@ -195,6 +195,29 @@ public class SyncJobHandler {
     public FlatMapFunction<CdcSourceRecord, RichCdcMultiplexRecord> provideRecordParser(
             List<ComputedColumn> computedColumns,
             TypeMapping typeMapping,
+            CdcMetadataConverter[] metadataConverters, String includeTable) {
+        switch (sourceType) {
+            case MYSQL:
+                return new MySqlRecordParser(
+                        cdcSourceConfig, computedColumns, typeMapping, metadataConverters);
+            case POSTGRES:
+                return new PostgresRecordParser(
+                        cdcSourceConfig, computedColumns, typeMapping, metadataConverters);
+            case KAFKA:
+            case PULSAR:
+                DataFormat dataFormat = provideDataFormat();
+                return dataFormat.createParser(typeMapping, computedColumns, includeTable);
+            case MONGODB:
+                return new MongoDBRecordParser(computedColumns, cdcSourceConfig);
+            default:
+                throw new UnsupportedOperationException("Unknown source type " + sourceType);
+        }
+
+    }
+
+    public FlatMapFunction<CdcSourceRecord, RichCdcMultiplexRecord> provideRecordParser(
+            List<ComputedColumn> computedColumns,
+            TypeMapping typeMapping,
             CdcMetadataConverter[] metadataConverters) {
         switch (sourceType) {
             case MYSQL:
