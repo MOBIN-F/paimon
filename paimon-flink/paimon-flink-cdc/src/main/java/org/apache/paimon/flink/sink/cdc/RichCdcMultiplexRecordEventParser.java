@@ -28,12 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.apache.paimon.utils.Preconditions.checkNotNull;
@@ -77,8 +72,11 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
     public void setRawEvent(RichCdcMultiplexRecord record) {
         this.record = record;
         this.currentTable = record.tableName();
-        this.currentParser = parsers.computeIfAbsent(currentTable, t -> new RichEventParser());
-        this.currentParser.setRawEvent(record.toRichCdcRecord());
+        this.shouldSynchronizeCurrentTable = shouldSynchronizeCurrentTable();
+        if (shouldSynchronizeCurrentTable) {
+            this.currentParser = parsers.computeIfAbsent(currentTable, t -> new RichEventParser());
+            this.currentParser.setRawEvent(record.toRichCdcRecord());
+        }
     }
 
     @Override
@@ -88,12 +86,16 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
 
     @Override
     public List<DataField> parseSchemaChange() {
-        return currentParser.parseSchemaChange();
+        return shouldSynchronizeCurrentTable
+                ? currentParser.parseSchemaChange()
+                : Collections.emptyList();
     }
 
     @Override
     public List<CdcRecord> parseRecords() {
-        return currentParser.parseRecords();
+        return shouldSynchronizeCurrentTable
+                ? currentParser.parseRecords()
+                : Collections.emptyList();
     }
 
     @Override
@@ -106,7 +108,43 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
         return Optional.empty();
     }
 
+    private boolean shouldSynchronizeCurrentTable() {
+        // In case the record is incomplete, we let the null value pass validation
+        // and handle the null value when we really need it
+        if (currentTable == null) {
+            return true;
+        }
+
+        if (includedTables.contains(currentTable)) {
+            return true;
+        }
+        if (excludedTables.contains(currentTable)) {
+            return false;
+        }
+
+        boolean shouldSynchronize = true;
+        if (includingPattern != null) {
+            shouldSynchronize = includingPattern.matcher(currentTable).matches();
+        }
+        if (excludingPattern != null) {
+            shouldSynchronize =
+                    shouldSynchronize && !excludingPattern.matcher(currentTable).matches();
+        }
+        if (!shouldSynchronize) {
+            LOG.debug(
+                    "Source table {} won't be synchronized because it was excluded. ",
+                    currentTable);
+            excludedTables.add(currentTable);
+            return false;
+        }
+
+        includedTables.add(currentTable);
+        return true;
+    }
+
     private boolean shouldCreateCurrentTable() {
-        return !record.fields().isEmpty() && createdTables.add(parseTableName());
+        return shouldSynchronizeCurrentTable
+                && !record.fields().isEmpty()
+                && createdTables.add(parseTableName());
     }
 }
