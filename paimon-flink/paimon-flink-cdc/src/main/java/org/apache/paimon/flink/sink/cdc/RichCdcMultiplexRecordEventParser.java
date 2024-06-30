@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -78,11 +77,11 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
     public void setRawEvent(RichCdcMultiplexRecord record) {
         this.record = record;
         this.currentTable = record.tableName();
-        this.shouldSynchronizeCurrentTable = shouldSynchronizeCurrentTable();
-        if (shouldSynchronizeCurrentTable) {
-            this.currentParser = parsers.computeIfAbsent(currentTable, t -> new RichEventParser());
-            this.currentParser.setRawEvent(record.toRichCdcRecord());
-        }
+        //        this.shouldSynchronizeCurrentTable = shouldSynchronizeCurrentTable();
+        //        if (shouldSynchronizeCurrentTable) {
+        this.currentParser = parsers.computeIfAbsent(currentTable, t -> new RichEventParser());
+        this.currentParser.setRawEvent(record.toRichCdcRecord());
+        //        }
     }
 
     @Override
@@ -99,16 +98,18 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
 
     @Override
     public List<DataField> parseSchemaChange() {
-        return shouldSynchronizeCurrentTable
-                ? currentParser.parseSchemaChange()
-                : Collections.emptyList();
+        //        return shouldSynchronizeCurrentTable
+        //                ? currentParser.parseSchemaChange()
+        //                : Collections.emptyList();
+        return currentParser.parseSchemaChange();
     }
 
     @Override
     public List<CdcRecord> parseRecords() {
-        return shouldSynchronizeCurrentTable
-                ? currentParser.parseRecords()
-                : Collections.emptyList();
+        //        return shouldSynchronizeCurrentTable
+        //                ? currentParser.parseRecords()
+        //                : Collections.emptyList();
+        return currentParser.parseRecords();
     }
 
     @Override
@@ -156,8 +157,6 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
     }
 
     private boolean shouldCreateCurrentTable() {
-        return shouldSynchronizeCurrentTable
-                && !record.fields().isEmpty()
-                && createdTables.add(parseTableName());
+        return !record.fields().isEmpty() && createdTables.add(parseTableName());
     }
 }

@@ -84,8 +84,12 @@ public class CanalRecordParser extends RecordParser {
         return !isNull(node) && node.asBoolean();
     }
 
-    public CanalRecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
-        super(typeMapping, computedColumns);
+    public CanalRecordParser(
+            TypeMapping typeMapping,
+            List<ComputedColumn> computedColumns,
+            String includingTables,
+            String excludingTables) {
+        super(typeMapping, computedColumns, includingTables, excludingTables);
     }
 
     @Override

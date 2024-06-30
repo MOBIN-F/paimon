@@ -36,8 +36,12 @@ import java.util.List;
  */
 public class JsonRecordParser extends RecordParser {
 
-    public JsonRecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
-        super(typeMapping, computedColumns);
+    public JsonRecordParser(
+            TypeMapping typeMapping,
+            List<ComputedColumn> computedColumns,
+            String includingTables,
+            String excludingTables) {
+        super(typeMapping, computedColumns, includingTables, excludingTables);
     }
 
     @Override

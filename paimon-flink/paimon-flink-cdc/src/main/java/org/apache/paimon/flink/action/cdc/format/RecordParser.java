@@ -43,11 +43,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -73,12 +70,27 @@ public abstract class RecordParser
     protected static final String FIELD_DATABASE = "database";
     protected final TypeMapping typeMapping;
     protected final List<ComputedColumn> computedColumns;
+    private final Set<String> includedTables = new HashSet<>();
+    private final Set<String> excludedTables = new HashSet<>();
+    Pattern includingPattern;
+    Pattern excludingPattern;
 
     protected JsonNode root;
 
     public RecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
         this.typeMapping = typeMapping;
         this.computedColumns = computedColumns;
+    }
+
+    public RecordParser(
+            TypeMapping typeMapping,
+            List<ComputedColumn> computedColumns,
+            String includingTables,
+            String excludingTables) {
+        this.typeMapping = typeMapping;
+        this.computedColumns = computedColumns;
+        this.includingPattern = Pattern.compile(includingTables);
+        this.excludingPattern = excludingTables == null ? null : Pattern.compile(excludingTables);
     }
 
     @Nullable
@@ -130,7 +142,9 @@ public abstract class RecordParser
     public void flatMap(CdcSourceRecord value, Collector<RichCdcMultiplexRecord> out) {
         try {
             setRoot(value);
-            extractRecords().forEach(out::collect);
+            if (shouldSynchronizeCurrentTable(getTableName())) {
+                extractRecords().forEach(out::collect);
+            }
         } catch (Exception e) {
             logInvalidSourceRecord(value);
             throw e;
@@ -216,6 +230,46 @@ public abstract class RecordParser
                                 ((ObjectNode) oldFullRecordNode)
                                         .set(fieldName, oldNode.get(fieldName)));
         return oldFullRecordNode;
+    }
+
+    private boolean shouldSynchronizeCurrentTable(String currentTable) {
+
+        // Both includedTables and excludedTables are null, indicating that it is sync_table
+        if (includedTables == null && excludedTables == null) {
+            return true;
+        }
+
+        // In case the record is incomplete, we let the null value pass validation
+        // and handle the null value when we really need it
+        if (currentTable == null) {
+            return true;
+        }
+
+        if (includedTables.contains(currentTable)) {
+            return true;
+        }
+        if (excludedTables.contains(currentTable)) {
+            return false;
+        }
+
+        boolean shouldSynchronize = true;
+        if (includingPattern != null) {
+            shouldSynchronize = includingPattern.matcher(currentTable).matches();
+        }
+        if (excludingPattern != null) {
+            shouldSynchronize =
+                    shouldSynchronize && !excludingPattern.matcher(currentTable).matches();
+        }
+        if (!shouldSynchronize) {
+            LOG.debug(
+                    "Source table {} won't be synchronized because it was excluded. ",
+                    currentTable);
+            excludedTables.add(currentTable);
+            return false;
+        }
+
+        includedTables.add(currentTable);
+        return true;
     }
 
     @Nullable
