@@ -83,11 +83,6 @@ public abstract class RecordParser
 
     protected JsonNode root;
 
-    public RecordParser(TypeMapping typeMapping, List<ComputedColumn> computedColumns) {
-        this.typeMapping = typeMapping;
-        this.computedColumns = computedColumns;
-    }
-
     public RecordParser(
             TypeMapping typeMapping,
             List<ComputedColumn> computedColumns,
@@ -95,7 +90,7 @@ public abstract class RecordParser
             String excludingTables) {
         this.typeMapping = typeMapping;
         this.computedColumns = computedColumns;
-        this.includingPattern = Pattern.compile(includingTables);
+        this.includingPattern = includingTables == null ? null : Pattern.compile(includingTables);
         this.excludingPattern = excludingTables == null ? null : Pattern.compile(excludingTables);
     }
 
@@ -148,7 +143,7 @@ public abstract class RecordParser
     public void flatMap(CdcSourceRecord value, Collector<RichCdcMultiplexRecord> out) {
         try {
             setRoot(value);
-            if (shouldSynchronizeCurrentTable(getTableName())) {
+            if (shouldSynchronizeCurrentTable(getDatabaseName(), getTableName())) {
                 extractRecords().forEach(out::collect);
             }
         } catch (Exception e) {
@@ -238,11 +233,18 @@ public abstract class RecordParser
         return oldFullRecordNode;
     }
 
-    private boolean shouldSynchronizeCurrentTable(String currentTable) {
-
+    private boolean shouldSynchronizeCurrentTable(String currentDataBase, String currentTable) {
         // Both includedTables and excludedTables are null, indicating that it is sync_table
-        if (includedTables == null && excludedTables == null) {
+        if (includingPattern == null && excludingPattern == null) {
             return true;
+        }
+
+        // database synchronization needs this, so we validate the record here
+        if (currentDataBase == null || currentTable == null) {
+            throw new IllegalArgumentException(
+                    "Cannot synchronize record when database name or table name is unknown. "
+                            + "Invalid record is:\n"
+                            + root);
         }
 
         // In case the record is incomplete, we let the null value pass validation
