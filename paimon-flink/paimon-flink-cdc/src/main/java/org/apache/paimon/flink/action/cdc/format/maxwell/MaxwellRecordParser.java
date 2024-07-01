@@ -19,6 +19,7 @@
 package org.apache.paimon.flink.action.cdc.format.maxwell;
 
 import org.apache.paimon.flink.action.cdc.ComputedColumn;
+import org.apache.paimon.flink.action.cdc.DatabaseSyncTableFilter;
 import org.apache.paimon.flink.action.cdc.TypeMapping;
 import org.apache.paimon.flink.action.cdc.format.RecordParser;
 import org.apache.paimon.flink.sink.cdc.RichCdcMultiplexRecord;
@@ -53,9 +54,8 @@ public class MaxwellRecordParser extends RecordParser {
     public MaxwellRecordParser(
             TypeMapping typeMapping,
             List<ComputedColumn> computedColumns,
-            String includingTables,
-            String excludingTables) {
-        super(typeMapping, computedColumns, includingTables, excludingTables);
+            DatabaseSyncTableFilter databaseSyncTableFilter) {
+        super(typeMapping, computedColumns, databaseSyncTableFilter);
     }
 
     @Override

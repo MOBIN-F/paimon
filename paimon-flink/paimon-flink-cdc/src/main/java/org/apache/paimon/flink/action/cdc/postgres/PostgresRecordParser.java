@@ -21,6 +21,7 @@ package org.apache.paimon.flink.action.cdc.postgres;
 import org.apache.paimon.flink.action.cdc.CdcMetadataConverter;
 import org.apache.paimon.flink.action.cdc.CdcSourceRecord;
 import org.apache.paimon.flink.action.cdc.ComputedColumn;
+import org.apache.paimon.flink.action.cdc.DatabaseSyncTableFilter;
 import org.apache.paimon.flink.action.cdc.TypeMapping;
 import org.apache.paimon.flink.action.cdc.mysql.format.DebeziumEvent;
 import org.apache.paimon.flink.sink.cdc.CdcRecord;
@@ -86,6 +87,7 @@ public class PostgresRecordParser
     private final ZoneId serverTimeZone;
     private final List<ComputedColumn> computedColumns;
     private final TypeMapping typeMapping;
+    private final DatabaseSyncTableFilter databaseSyncTableFilter;
 
     private DebeziumEvent root;
 
@@ -98,7 +100,8 @@ public class PostgresRecordParser
             Configuration postgresConfig,
             List<ComputedColumn> computedColumns,
             TypeMapping typeMapping,
-            CdcMetadataConverter[] metadataConverters) {
+            CdcMetadataConverter[] metadataConverters,
+            DatabaseSyncTableFilter databaseSyncTableFilter) {
         this.computedColumns = computedColumns;
         this.typeMapping = typeMapping;
         this.metadataConverters = metadataConverters;
@@ -110,6 +113,7 @@ public class PostgresRecordParser
                 stringifyServerTimeZone == null
                         ? ZoneId.systemDefault()
                         : ZoneId.of(stringifyServerTimeZone);
+        this.databaseSyncTableFilter = databaseSyncTableFilter;
     }
 
     @Override
@@ -120,7 +124,11 @@ public class PostgresRecordParser
         currentTable = root.payload().source().get(AbstractSourceInfo.TABLE_NAME_KEY).asText();
         databaseName = root.payload().source().get(AbstractSourceInfo.DATABASE_NAME_KEY).asText();
 
-        extractRecords().forEach(out::collect);
+        if (databaseSyncTableFilter == null
+                || databaseSyncTableFilter.filter(
+                        databaseName, currentTable, root.payload().source())) {
+            extractRecords().forEach(out::collect);
+        }
     }
 
     private List<DataField> extractFields(DebeziumEvent.Field schema) {

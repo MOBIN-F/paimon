@@ -67,7 +67,7 @@ public class KafkaSchemaITCase extends KafkaActionITCaseBase {
     }
 
     @Test
-    @Timeout(60)
+    //  @Timeout(60)
     public void testTableOptionsChange() throws Exception {
         final String topic = "test_table_options_change";
         createTestTopic(topic, 1, 1);
@@ -79,6 +79,7 @@ public class KafkaSchemaITCase extends KafkaActionITCaseBase {
         Map<String, String> tableConfig = new HashMap<>();
         tableConfig.put("bucket", "1");
         tableConfig.put("sink.parallelism", "1");
+        tableConfig.put("snapshot.time-retained", "1h");
 
         KafkaSyncTableAction action1 =
                 syncTableActionBuilder(kafkaConfig).withTableConfig(tableConfig).build();

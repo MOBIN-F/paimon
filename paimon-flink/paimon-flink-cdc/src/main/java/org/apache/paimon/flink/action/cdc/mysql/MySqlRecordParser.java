@@ -21,6 +21,7 @@ package org.apache.paimon.flink.action.cdc.mysql;
 import org.apache.paimon.flink.action.cdc.CdcMetadataConverter;
 import org.apache.paimon.flink.action.cdc.CdcSourceRecord;
 import org.apache.paimon.flink.action.cdc.ComputedColumn;
+import org.apache.paimon.flink.action.cdc.DatabaseSyncTableFilter;
 import org.apache.paimon.flink.action.cdc.TypeMapping;
 import org.apache.paimon.flink.action.cdc.format.debezium.DebeziumSchemaUtils;
 import org.apache.paimon.flink.action.cdc.mysql.format.DebeziumEvent;
@@ -74,6 +75,7 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
     private final ZoneId serverTimeZone;
     private final List<ComputedColumn> computedColumns;
     private final TypeMapping typeMapping;
+    private final DatabaseSyncTableFilter databaseSyncTableFilter;
 
     private DebeziumEvent root;
 
@@ -88,7 +90,8 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
             Configuration mySqlConfig,
             List<ComputedColumn> computedColumns,
             TypeMapping typeMapping,
-            CdcMetadataConverter[] metadataConverters) {
+            CdcMetadataConverter[] metadataConverters,
+            DatabaseSyncTableFilter databaseSyncTableFilter) {
         this.computedColumns = computedColumns;
         this.typeMapping = typeMapping;
         this.metadataConverters = metadataConverters;
@@ -100,6 +103,7 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
                 stringifyServerTimeZone == null
                         ? ZoneId.systemDefault()
                         : ZoneId.of(stringifyServerTimeZone);
+        this.databaseSyncTableFilter = databaseSyncTableFilter;
     }
 
     @Override
@@ -109,11 +113,15 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
         currentTable = root.payload().source().get(AbstractSourceInfo.TABLE_NAME_KEY).asText();
         databaseName = root.payload().source().get(AbstractSourceInfo.DATABASE_NAME_KEY).asText();
 
-        if (root.payload().isSchemaChange()) {
-            extractSchemaChange().forEach(out::collect);
-            return;
+        if (databaseSyncTableFilter == null
+                || databaseSyncTableFilter.filter(
+                        databaseName, currentTable, root.payload().source())) {
+            if (root.payload().isSchemaChange()) {
+                extractSchemaChange().forEach(out::collect);
+                return;
+            }
+            extractRecords().forEach(out::collect);
         }
-        extractRecords().forEach(out::collect);
     }
 
     private List<RichCdcMultiplexRecord> extractSchemaChange() {

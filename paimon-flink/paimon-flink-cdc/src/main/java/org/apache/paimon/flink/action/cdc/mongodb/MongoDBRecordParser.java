@@ -20,6 +20,7 @@ package org.apache.paimon.flink.action.cdc.mongodb;
 
 import org.apache.paimon.flink.action.cdc.CdcSourceRecord;
 import org.apache.paimon.flink.action.cdc.ComputedColumn;
+import org.apache.paimon.flink.action.cdc.DatabaseSyncTableFilter;
 import org.apache.paimon.flink.action.cdc.mongodb.strategy.Mongo4VersionStrategy;
 import org.apache.paimon.flink.action.cdc.mongodb.strategy.MongoVersionStrategy;
 import org.apache.paimon.flink.sink.cdc.RichCdcMultiplexRecord;
@@ -60,12 +61,17 @@ public class MongoDBRecordParser
     private static final String FIELD_NAMESPACE = "ns";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final List<ComputedColumn> computedColumns;
+    private final DatabaseSyncTableFilter databaseSyncTableFilter;
     private final Configuration mongodbConfig;
     private JsonNode root;
 
-    public MongoDBRecordParser(List<ComputedColumn> computedColumns, Configuration mongodbConfig) {
+    public MongoDBRecordParser(
+            List<ComputedColumn> computedColumns,
+            Configuration mongodbConfig,
+            DatabaseSyncTableFilter databaseSyncTableFilter) {
         this.computedColumns = computedColumns;
         this.mongodbConfig = mongodbConfig;
+        this.databaseSyncTableFilter = databaseSyncTableFilter;
     }
 
     @Override
@@ -74,10 +80,13 @@ public class MongoDBRecordParser
         root = OBJECT_MAPPER.readValue((String) value.getValue(), JsonNode.class);
         String databaseName = extractString(FIELD_DATABASE);
         String collection = extractString(FIELD_TABLE);
-        MongoVersionStrategy versionStrategy =
-                VersionStrategyFactory.create(
-                        databaseName, collection, computedColumns, mongodbConfig);
-        versionStrategy.extractRecords(root).forEach(out::collect);
+        if (databaseSyncTableFilter == null
+                || databaseSyncTableFilter.filter(databaseName, collection, root)) {
+            MongoVersionStrategy versionStrategy =
+                    VersionStrategyFactory.create(
+                            databaseName, collection, computedColumns, mongodbConfig);
+            versionStrategy.extractRecords(root).forEach(out::collect);
+        }
     }
 
     private String extractString(String key) {
