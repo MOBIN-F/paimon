@@ -136,10 +136,11 @@ public abstract class RecordParser
     public void flatMap(CdcSourceRecord value, Collector<RichCdcMultiplexRecord> out) {
         try {
             setRoot(value);
-            if (databaseSyncTableFilter == null
-                    || databaseSyncTableFilter.filter(getDatabaseName(), getTableName(), root)) {
-                extractRecords().forEach(out::collect);
+            if (databaseSyncTableFilter != null
+                    && !databaseSyncTableFilter.filter(getDatabaseName(), getTableName(), root)) {
+                return;
             }
+            extractRecords().forEach(out::collect);
         } catch (Exception e) {
             logInvalidSourceRecord(value);
             throw e;

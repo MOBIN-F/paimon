@@ -36,11 +36,8 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
 
 import static org.apache.paimon.flink.action.MultiTablesSinkMode.COMBINED;
 
@@ -56,9 +53,6 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
     protected List<String> primaryKeys = new ArrayList<>();
     @Nullable protected String excludingTables;
     protected List<FileStoreTable> tables = new ArrayList<>();
-
-    private final Set<String> includedTables = new HashSet<>();
-    private final Set<String> excludedTables = new HashSet<>();
 
     public SyncDatabaseActionBase(
             String warehouse,
@@ -144,56 +138,6 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
                 new TableNameConverter(caseSensitive, mergeShards, tablePrefix, tableSuffix);
 
         return () -> new RichCdcMultiplexRecordEventParser(schemaBuilder, tableNameConverter);
-    }
-
-    public boolean eval(String currentDataBase, String currentTable) {
-        Pattern includingPattern = Pattern.compile(includingTables);
-        Pattern excludingPattern =
-                excludingTables == null ? null : Pattern.compile(excludingTables);
-        // Both includedTables and excludedTables are null, indicating that it is sync_table
-        if (includingPattern == null && excludingPattern == null) {
-            return true;
-        }
-
-        // database synchronization needs this, so we validate the record here
-        if (currentDataBase == null || currentTable == null) {
-            throw new IllegalArgumentException(
-                    "Cannot synchronize record when database name or table name is unknown. "
-                            + "Invalid record is:\n"
-                            + "root.....");
-        }
-
-        // In case the record is incomplete, we let the null value pass validation
-        // and handle the null value when we really need it
-        if (currentTable == null) {
-            return true;
-        }
-
-        if (includedTables.contains(currentTable)) {
-            return true;
-        }
-        if (excludedTables.contains(currentTable)) {
-            return false;
-        }
-
-        boolean shouldSynchronize = true;
-        if (includingPattern != null) {
-            shouldSynchronize = includingPattern.matcher(currentTable).matches();
-        }
-        if (excludingPattern != null) {
-            shouldSynchronize =
-                    shouldSynchronize && !excludingPattern.matcher(currentTable).matches();
-        }
-        if (!shouldSynchronize) {
-            //            LOG.debug(
-            //                    "Source table {} won't be synchronized because it was excluded. ",
-            //                    currentTable);
-            excludedTables.add(currentTable);
-            return false;
-        }
-
-        includedTables.add(currentTable);
-        return true;
     }
 
     @Override

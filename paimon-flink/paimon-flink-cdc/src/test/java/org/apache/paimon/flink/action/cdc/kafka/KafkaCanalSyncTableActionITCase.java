@@ -66,7 +66,7 @@ public class KafkaCanalSyncTableActionITCase extends KafkaSyncTableActionITCase 
     }
 
     @Test
-    //  @Timeout(60)
+    @Timeout(60)
     public void testSchemaEvolutionWithMissingDdl() throws Exception {
         runSingleTableSchemaEvolution("schemaevolutionmissingddl");
     }

@@ -80,13 +80,14 @@ public class MongoDBRecordParser
         root = OBJECT_MAPPER.readValue((String) value.getValue(), JsonNode.class);
         String databaseName = extractString(FIELD_DATABASE);
         String collection = extractString(FIELD_TABLE);
-        if (databaseSyncTableFilter == null
-                || databaseSyncTableFilter.filter(databaseName, collection, root)) {
-            MongoVersionStrategy versionStrategy =
-                    VersionStrategyFactory.create(
-                            databaseName, collection, computedColumns, mongodbConfig);
-            versionStrategy.extractRecords(root).forEach(out::collect);
+        if (databaseSyncTableFilter != null
+                && !databaseSyncTableFilter.filter(databaseName, collection, root)) {
+            return;
         }
+        MongoVersionStrategy versionStrategy =
+                VersionStrategyFactory.create(
+                        databaseName, collection, computedColumns, mongodbConfig);
+        versionStrategy.extractRecords(root).forEach(out::collect);
     }
 
     private String extractString(String key) {

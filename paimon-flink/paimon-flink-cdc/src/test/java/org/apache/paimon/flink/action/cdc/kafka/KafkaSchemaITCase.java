@@ -67,7 +67,7 @@ public class KafkaSchemaITCase extends KafkaActionITCaseBase {
     }
 
     @Test
-    //  @Timeout(60)
+    @Timeout(60)
     public void testTableOptionsChange() throws Exception {
         final String topic = "test_table_options_change";
         createTestTopic(topic, 1, 1);

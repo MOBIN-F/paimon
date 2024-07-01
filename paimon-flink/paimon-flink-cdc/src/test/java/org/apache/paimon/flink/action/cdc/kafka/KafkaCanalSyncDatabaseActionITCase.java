@@ -414,7 +414,7 @@ public class KafkaCanalSyncDatabaseActionITCase extends KafkaActionITCaseBase {
     }
 
     @Test
-    //  @Timeout(60)
+    @Timeout(60)
     public void testIncludingTables() throws Exception {
         includingAndExcludingTablesImpl(
                 "flink|paimon.+",

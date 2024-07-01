@@ -124,11 +124,12 @@ public class PostgresRecordParser
         currentTable = root.payload().source().get(AbstractSourceInfo.TABLE_NAME_KEY).asText();
         databaseName = root.payload().source().get(AbstractSourceInfo.DATABASE_NAME_KEY).asText();
 
-        if (databaseSyncTableFilter == null
-                || databaseSyncTableFilter.filter(
+        if (databaseSyncTableFilter != null
+                && !databaseSyncTableFilter.filter(
                         databaseName, currentTable, root.payload().source())) {
-            extractRecords().forEach(out::collect);
+            return;
         }
+        extractRecords().forEach(out::collect);
     }
 
     private List<DataField> extractFields(DebeziumEvent.Field schema) {

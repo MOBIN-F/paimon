@@ -113,15 +113,16 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
         currentTable = root.payload().source().get(AbstractSourceInfo.TABLE_NAME_KEY).asText();
         databaseName = root.payload().source().get(AbstractSourceInfo.DATABASE_NAME_KEY).asText();
 
-        if (databaseSyncTableFilter == null
-                || databaseSyncTableFilter.filter(
+        if (databaseSyncTableFilter != null
+                && !databaseSyncTableFilter.filter(
                         databaseName, currentTable, root.payload().source())) {
-            if (root.payload().isSchemaChange()) {
-                extractSchemaChange().forEach(out::collect);
-                return;
-            }
-            extractRecords().forEach(out::collect);
+            return;
         }
+        if (root.payload().isSchemaChange()) {
+            extractSchemaChange().forEach(out::collect);
+            return;
+        }
+        extractRecords().forEach(out::collect);
     }
 
     private List<RichCdcMultiplexRecord> extractSchemaChange() {
