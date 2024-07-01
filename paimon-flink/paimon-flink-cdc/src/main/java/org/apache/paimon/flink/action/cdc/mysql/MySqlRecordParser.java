@@ -110,12 +110,12 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
     public void flatMap(CdcSourceRecord rawEvent, Collector<RichCdcMultiplexRecord> out)
             throws Exception {
         root = objectMapper.readValue((String) rawEvent.getValue(), DebeziumEvent.class);
-        currentTable = root.payload().source().get(AbstractSourceInfo.TABLE_NAME_KEY).asText();
-        databaseName = root.payload().source().get(AbstractSourceInfo.DATABASE_NAME_KEY).asText();
+        JsonNode source = root.payload().source();
+        currentTable = source.get(AbstractSourceInfo.TABLE_NAME_KEY).asText();
+        databaseName = source.get(AbstractSourceInfo.DATABASE_NAME_KEY).asText();
 
         if (databaseSyncTableFilter != null
-                && !databaseSyncTableFilter.filter(
-                        databaseName, currentTable, root.payload().source())) {
+                && !databaseSyncTableFilter.filter(databaseName, currentTable, source)) {
             return;
         }
         if (root.payload().isSchemaChange()) {

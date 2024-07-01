@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-/** Utility class to filter tables to synchronize based on a pattern. */
+/** Used to filter tables in whole database synchronization. */
 public class DatabaseSyncTableFilter implements Serializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(CdcActionCommonUtils.class);

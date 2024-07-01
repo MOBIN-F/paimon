@@ -91,7 +91,6 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
             checkNotNull(schemaBuilder, "NewTableSchemaBuilder hasn't been set.");
             return schemaBuilder.build(record);
         }
-
         return Optional.empty();
     }
 
