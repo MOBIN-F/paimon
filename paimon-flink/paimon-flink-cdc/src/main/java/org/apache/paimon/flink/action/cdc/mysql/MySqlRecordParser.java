@@ -49,6 +49,8 @@ import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,7 +77,7 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
     private final ZoneId serverTimeZone;
     private final List<ComputedColumn> computedColumns;
     private final TypeMapping typeMapping;
-    private final DatabaseSyncTableFilter databaseSyncTableFilter;
+    @Nullable private final DatabaseSyncTableFilter databaseSyncTableFilter;
 
     private DebeziumEvent root;
 
@@ -91,7 +93,7 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
             List<ComputedColumn> computedColumns,
             TypeMapping typeMapping,
             CdcMetadataConverter[] metadataConverters,
-            DatabaseSyncTableFilter databaseSyncTableFilter) {
+            @Nullable DatabaseSyncTableFilter databaseSyncTableFilter) {
         this.computedColumns = computedColumns;
         this.typeMapping = typeMapping;
         this.metadataConverters = metadataConverters;

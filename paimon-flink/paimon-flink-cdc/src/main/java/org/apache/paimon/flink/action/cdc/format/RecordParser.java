@@ -74,7 +74,7 @@ public abstract class RecordParser
     protected static final String FIELD_DATABASE = "database";
     protected final TypeMapping typeMapping;
     protected final List<ComputedColumn> computedColumns;
-    protected final DatabaseSyncTableFilter databaseSyncTableFilter;
+    @Nullable protected final DatabaseSyncTableFilter databaseSyncTableFilter;
 
     protected JsonNode root;
 

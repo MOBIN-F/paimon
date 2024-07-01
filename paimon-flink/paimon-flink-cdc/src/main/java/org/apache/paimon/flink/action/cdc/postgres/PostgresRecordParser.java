@@ -56,6 +56,8 @@ import org.apache.kafka.connect.json.JsonConverterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -87,7 +89,7 @@ public class PostgresRecordParser
     private final ZoneId serverTimeZone;
     private final List<ComputedColumn> computedColumns;
     private final TypeMapping typeMapping;
-    private final DatabaseSyncTableFilter databaseSyncTableFilter;
+    @Nullable private final DatabaseSyncTableFilter databaseSyncTableFilter;
 
     private DebeziumEvent root;
 
@@ -101,7 +103,7 @@ public class PostgresRecordParser
             List<ComputedColumn> computedColumns,
             TypeMapping typeMapping,
             CdcMetadataConverter[] metadataConverters,
-            DatabaseSyncTableFilter databaseSyncTableFilter) {
+            @Nullable DatabaseSyncTableFilter databaseSyncTableFilter) {
         this.computedColumns = computedColumns;
         this.typeMapping = typeMapping;
         this.metadataConverters = metadataConverters;

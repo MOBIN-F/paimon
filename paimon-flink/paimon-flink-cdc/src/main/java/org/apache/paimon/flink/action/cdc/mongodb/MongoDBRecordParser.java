@@ -32,6 +32,8 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
 
+import javax.annotation.Nullable;
+
 import java.util.List;
 
 /**
@@ -61,14 +63,14 @@ public class MongoDBRecordParser
     private static final String FIELD_NAMESPACE = "ns";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final List<ComputedColumn> computedColumns;
-    private final DatabaseSyncTableFilter databaseSyncTableFilter;
+    @Nullable private final DatabaseSyncTableFilter databaseSyncTableFilter;
     private final Configuration mongodbConfig;
     private JsonNode root;
 
     public MongoDBRecordParser(
             List<ComputedColumn> computedColumns,
             Configuration mongodbConfig,
-            DatabaseSyncTableFilter databaseSyncTableFilter) {
+            @Nullable DatabaseSyncTableFilter databaseSyncTableFilter) {
         this.computedColumns = computedColumns;
         this.mongodbConfig = mongodbConfig;
         this.databaseSyncTableFilter = databaseSyncTableFilter;
