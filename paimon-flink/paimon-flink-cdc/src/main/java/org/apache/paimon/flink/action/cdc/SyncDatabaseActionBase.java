@@ -57,6 +57,7 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
     protected List<String> primaryKeys = new ArrayList<>();
     @Nullable protected String excludingTables;
     protected List<FileStoreTable> tables = new ArrayList<>();
+    protected List<String> computedColumnArgs = new ArrayList<>();
 
     public SyncDatabaseActionBase(
             String warehouse,
@@ -118,6 +119,11 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
         return this;
     }
 
+    public SyncDatabaseActionBase withComputedColumnArgs(List<String> computedColumnArgs) {
+        this.computedColumnArgs = computedColumnArgs;
+        return this;
+    }
+
     @Override
     protected void validateCaseSensitivity() {
         AbstractCatalog.validateCaseInsensitive(caseSensitive, "Database", database);
@@ -135,7 +141,12 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
     protected EventParser.Factory<RichCdcMultiplexRecord> buildEventParserFactory() {
         NewTableSchemaBuilder schemaBuilder =
                 new NewTableSchemaBuilder(
-                        tableConfig, caseSensitive, partitionKeys, primaryKeys, metadataConverters);
+                        tableConfig,
+                        caseSensitive,
+                        partitionKeys,
+                        primaryKeys,
+                        metadataConverters,
+                        computedColumnArgs);
         Pattern includingPattern = Pattern.compile(includingTables);
         Pattern excludingPattern =
                 excludingTables == null ? null : Pattern.compile(excludingTables);
@@ -168,6 +179,7 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
                 .withTables(tables)
                 .withMode(mode)
                 .withTableOptions(tableConfig)
+                .withComputedColumnArgs(computedColumnArgs)
                 .build();
     }
 }

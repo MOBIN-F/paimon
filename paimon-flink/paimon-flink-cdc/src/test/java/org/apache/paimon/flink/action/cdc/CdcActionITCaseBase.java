@@ -366,6 +366,7 @@ public class CdcActionITCaseBase extends ActionITCaseBase {
         private final List<String> partitionKeys = new ArrayList<>();
         private final List<String> primaryKeys = new ArrayList<>();
         private final List<String> metadataColumn = new ArrayList<>();
+        private final List<String> computedColumnArgs = new ArrayList<>();
 
         public SyncDatabaseActionBuilder(Class<T> clazz, Map<String, String> sourceConfig) {
             this.clazz = clazz;
@@ -434,6 +435,16 @@ public class CdcActionITCaseBase extends ActionITCaseBase {
 
         public SyncDatabaseActionBuilder<T> withMetadataColumn(List<String> metadataColumn) {
             this.metadataColumn.addAll(metadataColumn);
+            return this;
+        }
+
+        public SyncDatabaseActionBuilder<T> withComputedColumnArgs(String... computedColumnArgs) {
+            return withComputedColumnArgs(Arrays.asList(computedColumnArgs));
+        }
+
+        public SyncDatabaseActionBuilder<T> withComputedColumnArgs(
+                List<String> computedColumnArgs) {
+            this.computedColumnArgs.addAll(computedColumnArgs);
             return this;
         }
 

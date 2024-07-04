@@ -79,6 +79,8 @@ public class FlinkCdcSyncDatabaseSinkBuilder<T> {
     private MultiTablesSinkMode mode;
     private String commitUser;
 
+    protected List<String> computedColumnArgs = new ArrayList<>();
+
     public FlinkCdcSyncDatabaseSinkBuilder<T> withInput(DataStream<T> input) {
         this.input = input;
         return this;
@@ -97,6 +99,12 @@ public class FlinkCdcSyncDatabaseSinkBuilder<T> {
 
     public FlinkCdcSyncDatabaseSinkBuilder<T> withTableOptions(Map<String, String> options) {
         return withTableOptions(Options.fromMap(options));
+    }
+
+    public FlinkCdcSyncDatabaseSinkBuilder<T> withComputedColumnArgs(
+            List<String> computedColumnArgs) {
+        this.computedColumnArgs = computedColumnArgs;
+        return this;
     }
 
     public FlinkCdcSyncDatabaseSinkBuilder<T> withTableOptions(Options options) {
