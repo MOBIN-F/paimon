@@ -56,6 +56,9 @@ public interface EventParser<T> {
      */
     List<CdcRecord> parseRecords();
 
+    /** Evaluate computed columns for records. */
+    default void evalComputedColumns() {};
+
     /**
      * Parse newly added table schema from event.
      *

@@ -20,6 +20,7 @@ package org.apache.paimon.flink.sink.cdc;
 
 import org.apache.paimon.catalog.Catalog;
 import org.apache.paimon.catalog.Identifier;
+import org.apache.paimon.flink.action.cdc.ComputedColumn;
 import org.apache.paimon.types.DataField;
 
 import org.apache.flink.api.common.typeinfo.TypeHint;
@@ -51,6 +52,11 @@ public class CdcDynamicTableParsingProcessFunction<T> extends ProcessFunction<T,
 
     public static final OutputTag<CdcMultiplexRecord> DYNAMIC_OUTPUT_TAG =
             new OutputTag<>("paimon-dynamic-table", TypeInformation.of(CdcMultiplexRecord.class));
+
+    public static final OutputTag<List<ComputedColumn>> COMPUTED_COLUMN_OUTPUT_TAG =
+            new OutputTag<>(
+                    "paimon-dynamic-table-computed-column",
+                    TypeInformation.of(new TypeHint<List<ComputedColumn>>() {}));
 
     public static final OutputTag<Tuple2<Identifier, List<DataField>>>
             DYNAMIC_SCHEMA_CHANGE_OUTPUT_TAG =
@@ -112,6 +118,8 @@ public class CdcDynamicTableParsingProcessFunction<T> extends ProcessFunction<T,
                     DYNAMIC_SCHEMA_CHANGE_OUTPUT_TAG,
                     Tuple2.of(Identifier.create(database, tableName), schemaChange));
         }
+
+        parser.evalComputedColumns();
 
         parser.parseRecords()
                 .forEach(

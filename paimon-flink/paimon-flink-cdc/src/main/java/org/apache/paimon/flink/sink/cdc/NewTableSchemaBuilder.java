@@ -57,6 +57,10 @@ public class NewTableSchemaBuilder implements Serializable {
         this.computedColumnArgs = computedColumnArgs;
     }
 
+    public List<ComputedColumn> getComputedColumns() {
+        return computedColumns;
+    }
+
     public Optional<Schema> build(RichCdcMultiplexRecord record) {
         Schema sourceSchema =
                 new Schema(

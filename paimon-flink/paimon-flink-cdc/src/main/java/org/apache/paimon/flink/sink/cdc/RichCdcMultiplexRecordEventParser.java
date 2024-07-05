@@ -114,6 +114,28 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
                 : Collections.emptyList();
     }
 
+    public void evalComputedColumns() {
+        if (shouldSynchronizeCurrentTable) {
+            CdcRecord cdcRecord = record.toRichCdcRecord().toCdcRecord();
+            Map<String, String> rowData = cdcRecord.fields();
+            schemaBuilder
+                    .getComputedColumns()
+                    .forEach(
+                            computedColumn -> {
+                                rowData.put(
+                                        computedColumn.columnName(),
+                                        computedColumn.eval(
+                                                rowData.get(computedColumn.fieldReference())));
+                                record.fields()
+                                        .add(
+                                                new DataField(
+                                                        record.fields().size(),
+                                                        computedColumn.columnName(),
+                                                        computedColumn.columnType()));
+                            });
+        }
+    }
+
     @Override
     public Optional<Schema> parseNewTable() {
         if (shouldCreateCurrentTable()) {
