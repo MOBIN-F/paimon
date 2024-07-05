@@ -115,9 +115,11 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
     }
 
     public void evalComputedColumns() {
+        if (schemaBuilder.getComputedColumns() == null) {
+            return;
+        }
         if (shouldSynchronizeCurrentTable) {
-            CdcRecord cdcRecord = record.toRichCdcRecord().toCdcRecord();
-            Map<String, String> rowData = cdcRecord.fields();
+            Map<String, String> rowData = record.toRichCdcRecord().toCdcRecord().fields();
             schemaBuilder
                     .getComputedColumns()
                     .forEach(

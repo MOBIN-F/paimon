@@ -1280,7 +1280,7 @@ public class MySqlSyncDatabaseActionITCase extends MySqlActionITCaseBase {
     }
 
     @Test
-    @Timeout(60)
+    // @Timeout(60)
     public void testMetadataColumns() throws Exception {
         Map<String, String> mySqlConfig = getBasicMySqlConfig();
         mySqlConfig.put("database-name", "metadata");

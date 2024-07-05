@@ -69,7 +69,8 @@ public class NewTableSchemaBuilder implements Serializable {
                         record.primaryKeys(),
                         Collections.emptyMap(),
                         null);
-        computedColumns = buildComputedColumns(computedColumnArgs, sourceSchema.fields());
+
+        this.computedColumns = buildComputedColumns(computedColumnArgs, sourceSchema.fields());
 
         return Optional.of(
                 buildPaimonSchema(

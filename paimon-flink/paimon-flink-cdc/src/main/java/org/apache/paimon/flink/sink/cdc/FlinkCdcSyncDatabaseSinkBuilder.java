@@ -33,8 +33,6 @@ import org.apache.paimon.utils.Preconditions;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.util.Collector;
 
 import javax.annotation.Nullable;
 
@@ -159,22 +157,6 @@ public class FlinkCdcSyncDatabaseSinkBuilder<T> {
                 .keyBy(t -> t.f0)
                 .process(new MultiTableUpdatedDataFieldsProcessFunction(catalogLoader))
                 .name("Schema Evolution");
-
-        newlyAddedTableStream
-                .process(
-                        new ProcessFunction<CdcMultiplexRecord, CdcMultiplexRecord>() {
-                            @Override
-                            public void processElement(
-                                    CdcMultiplexRecord record,
-                                    Context ctx,
-                                    Collector<CdcMultiplexRecord> out)
-                                    throws Exception {
-
-                                CdcRecord cdcRecord = record.record();
-                                Map<String, String> fields = cdcRecord.fields();
-                            }
-                        })
-                .name("Computed Column");
 
         DataStream<CdcMultiplexRecord> converted =
                 CaseSensitiveUtils.cdcMultiplexRecordConvert(catalogLoader, newlyAddedTableStream);
