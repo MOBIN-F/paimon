@@ -158,13 +158,19 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
         } catch (Catalog.DatabaseNotExistException e) {
             throw new RuntimeException(e);
         }
-        return () ->
-                new RichCdcMultiplexRecordEventParser(
+        List<String> computedColumnArgs = this.computedColumnArgs;
+        return new EventParser.Factory<RichCdcMultiplexRecord>() {
+            @Override
+            public EventParser<RichCdcMultiplexRecord> create() {
+                return new RichCdcMultiplexRecordEventParser(
                         schemaBuilder,
                         includingPattern,
                         excludingPattern,
                         tableNameConverter,
-                        createdTables);
+                        createdTables,
+                        computedColumnArgs);
+            }
+        };
     }
 
     @Override

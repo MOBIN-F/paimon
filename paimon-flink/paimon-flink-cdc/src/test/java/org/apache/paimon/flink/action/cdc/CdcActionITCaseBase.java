@@ -474,7 +474,7 @@ public class CdcActionITCaseBase extends ActionITCaseBase {
             args.addAll(listToArgs("--partition-keys", partitionKeys));
             args.addAll(listToArgs("--primary-keys", primaryKeys));
             args.addAll(listToArgs("--metadata-column", metadataColumn));
-            args.addAll(listToArgs("--computed_column", computedColumnArgs));
+            args.addAll(listToMultiArgs("--computed-column", computedColumnArgs));
 
             return createAction(clazz, args);
         }

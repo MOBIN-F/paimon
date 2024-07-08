@@ -22,10 +22,10 @@ import org.apache.paimon.flink.action.MultiTablesSinkMode;
 import org.apache.paimon.flink.action.MultipleParameterToolAdapter;
 import org.apache.paimon.flink.action.cdc.SyncDatabaseActionFactoryBase;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.METADATA_COLUMN;
-import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.MYSQL_CONF;
+import static org.apache.paimon.flink.action.cdc.CdcActionCommonUtils.*;
 
 /** Factory to create {@link MySqlSyncDatabaseAction}. */
 public class MySqlSyncDatabaseActionFactory
@@ -61,6 +61,11 @@ public class MySqlSyncDatabaseActionFactory
                 .withMode(MultiTablesSinkMode.fromString(params.get(MODE)));
         if (params.has(METADATA_COLUMN)) {
             action.withMetadataColumns(Arrays.asList(params.get(METADATA_COLUMN).split(",")));
+        }
+
+        if (params.has(COMPUTED_COLUMN)) {
+            action.withComputedColumnArgs(
+                    new ArrayList<>(params.getMultiParameter(COMPUTED_COLUMN)));
         }
     }
 

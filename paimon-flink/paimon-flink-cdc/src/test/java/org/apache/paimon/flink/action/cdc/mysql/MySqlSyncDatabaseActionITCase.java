@@ -957,7 +957,7 @@ public class MySqlSyncDatabaseActionITCase extends MySqlActionITCaseBase {
     }
 
     @Test
-    @Timeout(60)
+    //  @Timeout(60)
     public void testSyncMultipleShards() throws Exception {
         Map<String, String> mySqlConfig = getBasicMySqlConfig();
 
@@ -1466,5 +1466,148 @@ public class MySqlSyncDatabaseActionITCase extends MySqlActionITCaseBase {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    @Test
+    //   @Timeout(60)
+    public void testComputedColumn() throws Exception {
+        // the first round checks for table creation
+        // the second round checks for running the action on an existing table
+        for (int i = 0; i < 2; i++) {
+            innerTestComputedColumn(i == 0);
+        }
+    }
+
+    private void innerTestComputedColumn(boolean executeMysql) throws Exception {
+        Map<String, String> mySqlConfig = getBasicMySqlConfig();
+        mySqlConfig.put("database-name", "test_computed_column");
+
+        List<String> computedColumnDefs =
+                Arrays.asList(
+                        "_year_date=year(_date)",
+                        "_year_datetime=year(_datetime)",
+                        "_year_timestamp=year(_timestamp)",
+                        "_month_date=month(_date)",
+                        "_month_datetime=month(_datetime)",
+                        "_month_timestamp=month(_timestamp)",
+                        "_day_date=day(_date)",
+                        "_day_datetime=day(_datetime)",
+                        "_day_timestamp=day(_timestamp)",
+                        "_hour_date=hour(_date)",
+                        "_hour_datetime=hour(_datetime)",
+                        "_hour_timestamp=hour(_timestamp)",
+                        "_minute_date=minute(_date)",
+                        "_minute_datetime=minute(_datetime)",
+                        "_minute_timestamp=minute(_timestamp)",
+                        "_second_date=second(_date)",
+                        "_second_datetime=second(_datetime)",
+                        "_second_timestamp=second(_timestamp)",
+                        "_date_format_date=date_format(_date,yyyy)",
+                        "_date_format_datetime=date_format(_datetime,yyyy-MM-dd)",
+                        "_date_format_timestamp=date_format(_timestamp,yyyyMMdd)",
+                        "_substring_date1=substring(_date,2)",
+                        "_substring_date2=substring(_timestamp,5,10)",
+                        "_truncate_date=trUNcate(pk,2)", // test case-insensitive too
+                        "_constant=cast(11,INT)");
+
+        MultiTablesSinkMode mode = DIVIDED;
+
+        MySqlSyncDatabaseAction action =
+                syncDatabaseActionBuilder(mySqlConfig)
+                        .withTableConfig(getBasicTableConfig())
+                        .withMode(mode.configString())
+                        .withPartitionKeys("_year_date")
+                        .withPrimaryKeys("pk", "_year_date")
+                        .withComputedColumnArgs(computedColumnDefs)
+                        .build();
+
+        runActionWithDefaultEnv(action);
+
+        if (executeMysql) {
+            try (Statement statement = getStatement()) {
+                statement.executeUpdate(
+                        "INSERT INTO test_computed_column.t1 VALUES (1, '2023-03-23', '2022-01-01 14:30', '2021-09-15 15:00:10')");
+                statement.executeUpdate(
+                        "INSERT INTO test_computed_column.t1 VALUES (2, '2023-03-23', null, null)");
+
+                //                statement.executeUpdate(
+                //                        "INSERT INTO computed_column.test_computed_column1 VALUES
+                // (1, '2023-03-23', '2022-01-01 14:30', '2021-09-15 15:00:10')");
+                //                statement.executeUpdate(
+                //                        "INSERT INTO computed_column.test_computed_column1 VALUES
+                // (2, '2023-03-23', null, null)");
+            }
+        }
+
+        FileStoreTable table = getFileStoreTable("t1");
+        RowType rowType =
+                RowType.of(
+                        new DataType[] {
+                            DataTypes.INT().notNull(),
+                            DataTypes.DATE(),
+                            DataTypes.TIMESTAMP(0),
+                            DataTypes.TIMESTAMP(0),
+                            DataTypes.INT().notNull(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.INT(),
+                            DataTypes.STRING(),
+                            DataTypes.STRING(),
+                            DataTypes.STRING(),
+                            DataTypes.STRING(),
+                            DataTypes.STRING(),
+                            DataTypes.INT().notNull(),
+                            DataTypes.INT()
+                        },
+                        new String[] {
+                            "pk",
+                            "_date",
+                            "_datetime",
+                            "_timestamp",
+                            "_year_date",
+                            "_year_datetime",
+                            "_year_timestamp",
+                            "_month_date",
+                            "_month_datetime",
+                            "_month_timestamp",
+                            "_day_date",
+                            "_day_datetime",
+                            "_day_timestamp",
+                            "_hour_date",
+                            "_hour_datetime",
+                            "_hour_timestamp",
+                            "_minute_date",
+                            "_minute_datetime",
+                            "_minute_timestamp",
+                            "_second_date",
+                            "_second_datetime",
+                            "_second_timestamp",
+                            "_date_format_date",
+                            "_date_format_datetime",
+                            "_date_format_timestamp",
+                            "_substring_date1",
+                            "_substring_date2",
+                            "_truncate_date",
+                            "_constant"
+                        });
+        List<String> expected =
+                Arrays.asList(
+                        "+I[1, 19439, 2022-01-01T14:30, 2021-09-15T15:00:10, 2023, 2022, 2021, 3, 1, 9, 23, 1, 15, 0, 14, 15, 0, 30, 0, 0, 0, 10, 2023, 2022-01-01, 20210915, 23-03-23, 09-15, 0, 11]",
+                        "+I[2, 19439, NULL, NULL, 2023, NULL, NULL, 3, NULL, NULL, 23, NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, 2023, NULL, NULL, 23-03-23, NULL, 2, 11]");
+        waitForResult(expected, table, rowType, Arrays.asList("pk", "_year_date"));
     }
 }

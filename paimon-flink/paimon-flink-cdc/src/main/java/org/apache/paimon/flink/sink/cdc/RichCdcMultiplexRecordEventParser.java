@@ -19,6 +19,7 @@
 package org.apache.paimon.flink.sink.cdc;
 
 import org.apache.paimon.catalog.Identifier;
+import org.apache.paimon.flink.action.cdc.ComputedColumn;
 import org.apache.paimon.flink.action.cdc.TableNameConverter;
 import org.apache.paimon.schema.Schema;
 import org.apache.paimon.types.DataField;
@@ -37,6 +38,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static org.apache.paimon.flink.action.cdc.ComputedColumnUtils.buildComputedColumns;
 import static org.apache.paimon.utils.Preconditions.checkNotNull;
 
 /** {@link EventParser} for {@link RichCdcMultiplexRecord}. */
@@ -50,6 +52,8 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
     @Nullable private final Pattern excludingPattern;
     private final TableNameConverter tableNameConverter;
     private final Set<String> createdTables;
+    private final Map<String, List<ComputedColumn>> computedColumnMap = new HashMap<>();
+    List<String> computedColumnArgs;
 
     private final Map<String, RichEventParser> parsers = new HashMap<>();
     private final Set<String> includedTables = new HashSet<>();
@@ -61,7 +65,7 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
     private RichEventParser currentParser;
 
     public RichCdcMultiplexRecordEventParser(boolean caseSensitive) {
-        this(null, null, null, new TableNameConverter(caseSensitive), new HashSet<>());
+        this(null, null, null, new TableNameConverter(caseSensitive), new HashSet<>(), null);
     }
 
     public RichCdcMultiplexRecordEventParser(
@@ -69,12 +73,14 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
             @Nullable Pattern includingPattern,
             @Nullable Pattern excludingPattern,
             TableNameConverter tableNameConverter,
-            Set<String> createdTables) {
+            Set<String> createdTables,
+            List<String> computedColumnArgs) {
         this.schemaBuilder = schemaBuilder;
         this.includingPattern = includingPattern;
         this.excludingPattern = excludingPattern;
         this.tableNameConverter = tableNameConverter;
         this.createdTables = createdTables;
+        this.computedColumnArgs = computedColumnArgs;
     }
 
     @Override
@@ -115,26 +121,78 @@ public class RichCdcMultiplexRecordEventParser implements EventParser<RichCdcMul
     }
 
     public void evalComputedColumns() {
-        if (schemaBuilder.getComputedColumns() == null) {
+        if (computedColumnArgs.isEmpty()) {
             return;
         }
+        //        if (schemaBuilder.getComputedColumns() == null) {
+        //            return;
+        //        }
         if (shouldSynchronizeCurrentTable) {
+            List<ComputedColumn> computedColumns = computedColumnMap.get(currentTable);
+            if (computedColumns == null || computedColumns.isEmpty()) {
+                Schema sourceSchema =
+                        new Schema(
+                                record.fields(),
+                                Collections.emptyList(),
+                                record.primaryKeys(),
+                                Collections.emptyMap(),
+                                null);
+
+                computedColumns = buildComputedColumns(computedColumnArgs, sourceSchema.fields());
+                computedColumnMap.put(currentTable, computedColumns);
+            }
+
             Map<String, String> rowData = record.toRichCdcRecord().toCdcRecord().fields();
-            schemaBuilder
-                    .getComputedColumns()
-                    .forEach(
-                            computedColumn -> {
-                                rowData.put(
-                                        computedColumn.columnName(),
-                                        computedColumn.eval(
-                                                rowData.get(computedColumn.fieldReference())));
-                                record.fields()
-                                        .add(
-                                                new DataField(
-                                                        record.fields().size(),
-                                                        computedColumn.columnName(),
-                                                        computedColumn.columnType()));
-                            });
+            computedColumns.forEach(
+                    computedColumn -> {
+                        rowData.put(
+                                computedColumn.columnName(),
+                                computedColumn.eval(rowData.get(computedColumn.fieldReference())));
+                        record.fields()
+                                .add(
+                                        new DataField(
+                                                record.fields().size(),
+                                                computedColumn.columnName(),
+                                                computedColumn.columnType()));
+                    });
+        }
+    }
+//
+    public void evalComputedColumns1() {
+        if (computedColumnArgs.isEmpty()) {
+            return;
+        }
+        //        if (schemaBuilder.getComputedColumns() == null) {
+        //            return;
+        //        }
+        if (shouldSynchronizeCurrentTable) {
+            List<ComputedColumn> computedColumns = computedColumnMap.get(currentTable);
+            if (computedColumns.isEmpty()) {
+                Schema sourceSchema =
+                        new Schema(
+                                record.fields(),
+                                Collections.emptyList(),
+                                record.primaryKeys(),
+                                Collections.emptyMap(),
+                                null);
+
+                computedColumns = buildComputedColumns(computedColumnArgs, sourceSchema.fields());
+                computedColumnMap.put(currentTable, computedColumns);
+            }
+
+            Map<String, String> rowData = record.toRichCdcRecord().toCdcRecord().fields();
+            computedColumns.forEach(
+                    computedColumn -> {
+                        rowData.put(
+                                computedColumn.columnName(),
+                                computedColumn.eval(rowData.get(computedColumn.fieldReference())));
+                        record.fields()
+                                .add(
+                                        new DataField(
+                                                record.fields().size(),
+                                                computedColumn.columnName(),
+                                                computedColumn.columnType()));
+                    });
         }
     }
 
