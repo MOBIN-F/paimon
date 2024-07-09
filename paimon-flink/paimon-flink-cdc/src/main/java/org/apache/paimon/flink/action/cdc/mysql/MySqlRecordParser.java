@@ -26,6 +26,7 @@ import org.apache.paimon.flink.action.cdc.format.debezium.DebeziumSchemaUtils;
 import org.apache.paimon.flink.action.cdc.mysql.format.DebeziumEvent;
 import org.apache.paimon.flink.sink.cdc.CdcRecord;
 import org.apache.paimon.flink.sink.cdc.RichCdcMultiplexRecord;
+import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.paimon.types.DataField;
 import org.apache.paimon.types.DataType;
 import org.apache.paimon.types.RowKind;
@@ -185,20 +186,22 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
         }
         List<RichCdcMultiplexRecord> records = new ArrayList<>();
 
-        Map<String, String> before = extractRow(root.payload().before());
+        RowType.Builder rowTypeBuilder = RowType.builder();
+
+        Map<String, String> before = extractRow(root.payload().before(), rowTypeBuilder);
         if (!before.isEmpty()) {
-            records.add(createRecord(RowKind.DELETE, before));
+            records.add(createRecord(RowKind.DELETE, before, rowTypeBuilder));
         }
 
-        Map<String, String> after = extractRow(root.payload().after());
+        Map<String, String> after = extractRow(root.payload().after(), rowTypeBuilder);
         if (!after.isEmpty()) {
-            records.add(createRecord(RowKind.INSERT, after));
+            records.add(createRecord(RowKind.INSERT, after, rowTypeBuilder));
         }
 
         return records;
     }
 
-    private Map<String, String> extractRow(JsonNode recordRow) {
+    private Map<String, String> extractRow(JsonNode recordRow, RowType.Builder rowTypeBuilder) {
         if (JsonSerdeUtil.isNull(recordRow)) {
             return new HashMap<>();
         }
@@ -232,6 +235,21 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
                             objectValue,
                             serverTimeZone);
             resultMap.put(fieldName, newValue);
+
+            JsonNode parametersNode = field.getValue().parameters();
+            Map<String, String> parametersMap =
+                    isNull(parametersNode)
+                            ? Collections.emptyMap()
+                            : JsonSerdeUtil.convertValue(
+                            parametersNode,
+                            new TypeReference<HashMap<String, String>>() {});
+
+            rowTypeBuilder.field(
+                    fieldName,
+                    DebeziumSchemaUtils.toDataType(
+                            field.getValue().type(), className, parametersMap));
+
+            System.out.println("11");
         }
 
         // generate values of computed columns
@@ -250,11 +268,11 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
         return resultMap;
     }
 
-    protected RichCdcMultiplexRecord createRecord(RowKind rowKind, Map<String, String> data) {
+    protected RichCdcMultiplexRecord createRecord(RowKind rowKind, Map<String, String> data, RowType.Builder rowTypeBuilder) {
         return new RichCdcMultiplexRecord(
                 databaseName,
                 currentTable,
-                Collections.emptyList(),
+                rowTypeBuilder.build().getFields(),
                 Collections.emptyList(),
                 new CdcRecord(rowKind, data));
     }
