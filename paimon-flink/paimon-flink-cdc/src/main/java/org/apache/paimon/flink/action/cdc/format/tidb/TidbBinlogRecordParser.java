@@ -261,8 +261,12 @@ public class TidbBinlogRecordParser extends RecordParser {
                             countColumn++;
                         }
 
-                    } else if (tableMutation.getType().getNumber() != DELETE_VALUE) {
-                        map.put(FIELD_TYPE, OP_INSERT);
+                    } else {
+                        if (DELETE_VALUE == tableMutation.getType().getNumber()) {
+                            map.put("type", OP_DELETE);
+                        } else {
+                            map.put("type", OP_INSERT);
+                        }
                         int countColumn = 0;
                         for (BinLog.ColumnInfo columnInfo : columnInfoList) {
                             String name = columnInfo.getName();
