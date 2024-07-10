@@ -36,7 +36,6 @@ import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -167,7 +166,11 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
         }
         return () ->
                 new RichCdcMultiplexRecordEventParser(
-                        schemaBuilder, includingPattern, excludingPattern, tableNameConverter, createdTables);
+                        schemaBuilder,
+                        includingPattern,
+                        excludingPattern,
+                        tableNameConverter,
+                        createdTables);
     }
 
     @Override
