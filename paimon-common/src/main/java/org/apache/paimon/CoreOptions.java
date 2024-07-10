@@ -129,7 +129,7 @@ public class CoreOptions implements Serializable {
     public static final ConfigOption<String> FILE_FORMAT =
             key("file.format")
                     .stringType()
-                    .defaultValue(FILE_FORMAT_ORC)
+                    .defaultValue(FILE_FORMAT_PARQUET)
                     .withDescription(
                             "Specify the message format of data files, currently orc, parquet and avro are supported.");
 
@@ -310,6 +310,7 @@ public class CoreOptions implements Serializable {
                     .defaultValue(MergeEngine.DEDUPLICATE)
                     .withDescription("Specify the merge engine for table with primary key.");
 
+    @Immutable
     public static final ConfigOption<Boolean> IGNORE_DELETE =
             key("ignore-delete")
                     .booleanType()
@@ -679,6 +680,26 @@ public class CoreOptions implements Serializable {
                     .withDescription(
                             "Whether only overwrite dynamic partition when overwriting a partitioned table with "
                                     + "dynamic partition columns. Works only when the table has partition keys.");
+
+    public static final ConfigOption<PartitionExpireStrategy> PARTITION_EXPIRATION_STRATEGY =
+            key("partition.expiration-strategy")
+                    .enumType(PartitionExpireStrategy.class)
+                    .defaultValue(PartitionExpireStrategy.VALUES_TIME)
+                    .withDescription(
+                            Description.builder()
+                                    .text(
+                                            "Specifies the expiration strategy for partition expiration.")
+                                    .linebreak()
+                                    .text("Possible values:")
+                                    .list(
+                                            text(
+                                                    PartitionExpireStrategy.VALUES_TIME.value
+                                                            + ": A partition expiration policy that compares the time extracted from the partition value with the current time."))
+                                    .list(
+                                            text(
+                                                    PartitionExpireStrategy.UPDATE_TIME.value
+                                                            + ": A partition expiration policy that compares the last update time of the partition with the current time."))
+                                    .build());
 
     public static final ConfigOption<Duration> PARTITION_EXPIRATION_TIME =
             key("partition.expiration-time")
@@ -1067,6 +1088,12 @@ public class CoreOptions implements Serializable {
                     .withDescription(
                             "The default maximum time retained for newly created tags. "
                                     + "It affects both auto-created tags and manually created (by procedure) tags.");
+
+    public static final ConfigOption<Boolean> TAG_AUTOMATIC_COMPLETION =
+            key("tag.automatic-completion")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription("Whether to automatically complete missing tags.");
 
     public static final ConfigOption<Duration> SNAPSHOT_WATERMARK_IDLE_TIMEOUT =
             key("snapshot.watermark-idle-timeout")
@@ -1758,6 +1785,10 @@ public class CoreOptions implements Serializable {
         return options.get(PARTITION_EXPIRATION_CHECK_INTERVAL);
     }
 
+    public PartitionExpireStrategy partitionExpireStrategy() {
+        return options.get(PARTITION_EXPIRATION_STRATEGY);
+    }
+
     public String partitionTimestampFormatter() {
         return options.get(PARTITION_TIMESTAMP_FORMATTER);
     }
@@ -1822,6 +1853,10 @@ public class CoreOptions implements Serializable {
 
     public Duration tagDefaultTimeRetained() {
         return options.get(TAG_DEFAULT_TIME_RETAINED);
+    }
+
+    public boolean tagAutomaticCompletion() {
+        return options.get(TAG_AUTOMATIC_COMPLETION);
     }
 
     public Duration snapshotWatermarkIdleTimeout() {
@@ -2470,6 +2505,36 @@ public class CoreOptions implements Serializable {
         private final String description;
 
         ConsumerMode(String value, String description) {
+            this.value = value;
+            this.description = description;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+
+        @Override
+        public InlineElement getDescription() {
+            return text(description);
+        }
+    }
+
+    /** Specifies the expiration strategy for partition expiration. */
+    public enum PartitionExpireStrategy implements DescribedEnum {
+        VALUES_TIME(
+                "values-time",
+                "The strategy compares the time extracted from the partition value with the current time."),
+
+        UPDATE_TIME(
+                "update-time",
+                "The strategy compares the last update time of the partition with the current time.");
+
+        private final String value;
+
+        private final String description;
+
+        PartitionExpireStrategy(String value, String description) {
             this.value = value;
             this.description = description;
         }

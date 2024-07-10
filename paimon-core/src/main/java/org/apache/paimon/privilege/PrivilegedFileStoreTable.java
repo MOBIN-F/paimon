@@ -34,6 +34,7 @@ import org.apache.paimon.table.query.LocalTableQuery;
 import org.apache.paimon.table.sink.RowKeyExtractor;
 import org.apache.paimon.table.sink.TableCommitImpl;
 import org.apache.paimon.table.sink.TableWriteImpl;
+import org.apache.paimon.table.sink.WriteSelector;
 import org.apache.paimon.table.source.DataTableScan;
 import org.apache.paimon.table.source.InnerTableRead;
 import org.apache.paimon.table.source.StreamDataTableScan;
@@ -59,6 +60,16 @@ public class PrivilegedFileStoreTable implements FileStoreTable {
         this.wrapped = wrapped;
         this.privilegeChecker = privilegeChecker;
         this.identifier = identifier;
+    }
+
+    @Override
+    public String name() {
+        return wrapped.name();
+    }
+
+    @Override
+    public String fullName() {
+        return wrapped.fullName();
     }
 
     @Override
@@ -205,15 +216,9 @@ public class PrivilegedFileStoreTable implements FileStoreTable {
     }
 
     @Override
-    public void mergeBranch(String branchName) {
+    public void fastForward(String branchName) {
         privilegeChecker.assertCanInsert(identifier);
-        wrapped.mergeBranch(branchName);
-    }
-
-    @Override
-    public void replaceBranch(String fromBranch) {
-        privilegeChecker.assertCanInsert(identifier);
-        wrapped.replaceBranch(fromBranch);
+        wrapped.fastForward(branchName);
     }
 
     @Override
@@ -256,6 +261,12 @@ public class PrivilegedFileStoreTable implements FileStoreTable {
     public InnerTableRead newRead() {
         privilegeChecker.assertCanSelect(identifier);
         return wrapped.newRead();
+    }
+
+    @Override
+    public Optional<WriteSelector> newWriteSelector() {
+        privilegeChecker.assertCanInsert(identifier);
+        return wrapped.newWriteSelector();
     }
 
     @Override

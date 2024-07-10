@@ -20,6 +20,7 @@ package org.apache.paimon.table;
 
 import org.apache.paimon.CoreOptions;
 import org.apache.paimon.Snapshot;
+import org.apache.paimon.catalog.Identifier;
 import org.apache.paimon.consumer.ConsumerManager;
 import org.apache.paimon.fs.FileIO;
 import org.apache.paimon.fs.Path;
@@ -40,10 +41,12 @@ import org.apache.paimon.table.sink.CallbackUtils;
 import org.apache.paimon.table.sink.CommitCallback;
 import org.apache.paimon.table.sink.DynamicBucketRowKeyExtractor;
 import org.apache.paimon.table.sink.FixedBucketRowKeyExtractor;
+import org.apache.paimon.table.sink.FixedBucketWriteSelector;
 import org.apache.paimon.table.sink.RowKeyExtractor;
 import org.apache.paimon.table.sink.RowKindGenerator;
 import org.apache.paimon.table.sink.TableCommitImpl;
 import org.apache.paimon.table.sink.UnawareBucketRowKeyExtractor;
+import org.apache.paimon.table.sink.WriteSelector;
 import org.apache.paimon.table.source.DataTableBatchScan;
 import org.apache.paimon.table.source.DataTableStreamScan;
 import org.apache.paimon.table.source.SplitGenerator;
@@ -104,6 +107,20 @@ abstract class AbstractFileStoreTable implements FileStoreTable {
     }
 
     @Override
+    public String name() {
+        Identifier identifier = catalogEnvironment.identifier();
+        return identifier == null ? location().getName() : identifier.getObjectName();
+    }
+
+    @Override
+    public String fullName() {
+        Identifier identifier = catalogEnvironment.identifier();
+        return identifier == null
+                ? SchemaManager.fromPath(location().toUri().toString(), true).getFullName()
+                : identifier.getFullName();
+    }
+
+    @Override
     public Optional<Statistics> statistics() {
         // todo: support time travel
         Snapshot latestSnapshot = snapshotManager().latestSnapshot();
@@ -116,6 +133,19 @@ abstract class AbstractFileStoreTable implements FileStoreTable {
     @Override
     public BucketMode bucketMode() {
         return store().bucketMode();
+    }
+
+    @Override
+    public Optional<WriteSelector> newWriteSelector() {
+        switch (bucketMode()) {
+            case HASH_FIXED:
+                return Optional.of(new FixedBucketWriteSelector(schema()));
+            case BUCKET_UNAWARE:
+                return Optional.empty();
+            default:
+                throw new UnsupportedOperationException(
+                        "Currently, write selector does not support table mode: " + bucketMode());
+        }
     }
 
     @Override
@@ -525,13 +555,8 @@ abstract class AbstractFileStoreTable implements FileStoreTable {
     }
 
     @Override
-    public void mergeBranch(String branchName) {
-        branchManager().mergeBranch(branchName);
-    }
-
-    @Override
-    public void replaceBranch(String fromBranch) {
-        branchManager().replaceBranch(fromBranch);
+    public void fastForward(String branchName) {
+        branchManager().fastForward(branchName);
     }
 
     @Override
@@ -549,9 +574,10 @@ abstract class AbstractFileStoreTable implements FileStoreTable {
             // earliest hint
             SnapshotManager snapshotManager = snapshotManager();
             if (!snapshotManager.snapshotExists(taggedSnapshot.id())) {
-                fileIO.writeFileUtf8(
+                fileIO.writeFile(
                         snapshotManager().snapshotPath(taggedSnapshot.id()),
-                        fileIO.readFileUtf8(tagManager.tagPath(tagName)));
+                        fileIO.readFileUtf8(tagManager.tagPath(tagName)),
+                        false);
                 snapshotManager.commitEarliestHint(taggedSnapshot.id());
             }
         } catch (IOException e) {

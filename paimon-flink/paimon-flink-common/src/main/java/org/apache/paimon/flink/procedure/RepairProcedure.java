@@ -20,6 +20,7 @@ package org.apache.paimon.flink.procedure;
 
 import org.apache.paimon.catalog.Catalog;
 import org.apache.paimon.catalog.Identifier;
+import org.apache.paimon.hive.HiveCatalog;
 import org.apache.paimon.utils.StringUtils;
 
 import org.apache.flink.table.procedure.ProcedureContext;
@@ -54,25 +55,38 @@ public class RepairProcedure extends ProcedureBase {
 
     public String[] call(ProcedureContext procedureContext, String identifier)
             throws Catalog.DatabaseNotExistException, Catalog.TableNotExistException {
+        if (!(catalog instanceof HiveCatalog)) {
+            throw new IllegalArgumentException("Only support Hive Catalog");
+        }
+
         if (StringUtils.isBlank(identifier)) {
             catalog.repairCatalog();
             return new String[] {"Success"};
         }
-        String[] paths = identifier.split("\\.");
-        switch (paths.length) {
-            case 1:
-                catalog.repairDatabase(paths[0]);
-                break;
-            case 2:
-                catalog.repairTable(Identifier.create(paths[0], paths[1]));
-                break;
-            default:
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Cannot get splits from '%s' to get database and table",
-                                identifier));
-        }
+
+        repairDatabasesOrTables(identifier);
 
         return new String[] {"Success"};
+    }
+
+    public void repairDatabasesOrTables(String databaseOrTables)
+            throws Catalog.TableNotExistException {
+        String[] databaseOrTableSplits = databaseOrTables.split(",");
+        for (String split : databaseOrTableSplits) {
+            String[] paths = split.split("\\.");
+            switch (paths.length) {
+                case 1:
+                    catalog.repairDatabase(paths[0]);
+                    break;
+                case 2:
+                    catalog.repairTable(Identifier.create(paths[0], paths[1]));
+                    break;
+                default:
+                    throw new IllegalArgumentException(
+                            String.format(
+                                    "Cannot get splits from '%s' to get database and table",
+                                    split));
+            }
+        }
     }
 }

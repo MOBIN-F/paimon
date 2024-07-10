@@ -286,7 +286,7 @@ under the License.
         </tr>
         <tr>
             <td><h5>file.format</h5></td>
-            <td style="word-wrap: break-word;">"orc"</td>
+            <td style="word-wrap: break-word;">"parquet"</td>
             <td>String</td>
             <td>Specify the message format of data files, currently orc, parquet and avro are supported.</td>
         </tr>
@@ -484,6 +484,12 @@ This config option does not affect the default filesystem metastore.</td>
             <td style="word-wrap: break-word;">"__DEFAULT_PARTITION__"</td>
             <td>String</td>
             <td>The default partition name in case the dynamic partition column value is null/empty string.</td>
+        </tr>
+        <tr>
+            <td><h5>partition.expiration-strategy</h5></td>
+            <td style="word-wrap: break-word;">values-time</td>
+            <td>String</td>
+            <td>Specifies the expiration strategy for partition expiration.<br />Possible values:<ul><li>values-time: A partition expiration policy that compares the time extracted from the partition value with the current time.</li></ul><ul><li>update-time: A partition expiration policy that compares the last update time of the partition with the current time.</li></ul><br /><br />Possible values:<ul><li>"values-time": The strategy compares the time extracted from the partition value with the current time.</li><li>"update-time": The strategy compares the last update time of the partition with the current time.</li></ul></td>
         </tr>
         <tr>
             <td><h5>partition.expiration-check-interval</h5></td>
@@ -719,6 +725,12 @@ If the data size allocated for the sorting task is uneven,which may lead to perf
             <td style="word-wrap: break-word;">false</td>
             <td>Boolean</td>
             <td>Whether to read the changes from overwrite in streaming mode. Cannot be set to true when changelog producer is full-compaction or lookup because it will read duplicated changes.</td>
+        </tr>
+        <tr>
+            <td><h5>tag.automatic-completion</h5></td>
+            <td style="word-wrap: break-word;">false</td>
+            <td>Boolean</td>
+            <td>Whether to automatically complete missing tags.</td>
         </tr>
         <tr>
             <td><h5>tag.automatic-creation</h5></td>
