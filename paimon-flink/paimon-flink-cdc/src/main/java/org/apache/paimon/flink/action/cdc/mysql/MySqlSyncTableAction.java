@@ -29,8 +29,10 @@ import org.apache.paimon.schema.Schema;
 
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.mysql.source.config.MySqlSourceOptions;
+import org.apache.paimon.types.DataField;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -90,12 +92,15 @@ public class MySqlSyncTableAction extends SyncTableActionBase {
     }
 
     @Override
-    protected Schema retrieveSchema() throws Exception {
+    protected Schema retrieveSchema(HashMap<String, List<DataField>> dataFieldMap) throws Exception {
         this.mySqlSchemasInfo =
                 MySqlActionUtils.getMySqlTableInfos(
                         cdcSourceConfig, monitorTablePredication(), new ArrayList<>(), typeMapping);
+        Predicate<String> stringPredicate = monitorTablePredication();
         validateMySqlTableInfos(mySqlSchemasInfo);
+
         JdbcTableInfo tableInfo = mySqlSchemasInfo.mergeAll();
+        dataFieldMap.put(tableInfo.tableName(), tableInfo.schema().fields());
         return tableInfo.schema();
     }
 

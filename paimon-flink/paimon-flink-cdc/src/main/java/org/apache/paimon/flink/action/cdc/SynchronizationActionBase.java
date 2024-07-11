@@ -38,6 +38,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.apache.paimon.types.DataField;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -67,6 +68,7 @@ public abstract class SynchronizationActionBase extends ActionBase {
     protected Map<String, String> tableConfig = new HashMap<>();
     protected TypeMapping typeMapping = TypeMapping.defaultMapping();
     protected CdcMetadataConverter[] metadataConverters = new CdcMetadataConverter[] {};
+    protected HashMap<String, List<DataField>> dataFieldMap = new HashMap<>();
 
     public SynchronizationActionBase(
             String warehouse,

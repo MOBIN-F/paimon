@@ -29,8 +29,10 @@ import org.apache.paimon.schema.Schema;
 
 import com.ververica.cdc.connectors.base.source.jdbc.JdbcIncrementalSource;
 import com.ververica.cdc.connectors.postgres.source.config.PostgresSourceOptions;
+import org.apache.paimon.types.DataField;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -92,7 +94,7 @@ public class PostgresSyncTableAction extends SyncTableActionBase {
     }
 
     @Override
-    protected Schema retrieveSchema() throws Exception {
+    protected Schema retrieveSchema(HashMap<String, List<DataField>> dataFieldMap) throws Exception {
         this.postgresSchemasInfo =
                 PostgresActionUtils.getPostgresTableInfos(
                         cdcSourceConfig, monitorTablePredication(), new ArrayList<>(), typeMapping);

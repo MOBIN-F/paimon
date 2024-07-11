@@ -82,6 +82,7 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
     private String currentTable;
     private String databaseName;
     private final CdcMetadataConverter[] metadataConverters;
+    private final HashMap<String, List<ComputedColumn>> computedColumnMap;
 
     private final Set<String> nonPkTables = new HashSet<>();
 
@@ -89,7 +90,8 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
             Configuration mySqlConfig,
             List<ComputedColumn> computedColumns,
             TypeMapping typeMapping,
-            CdcMetadataConverter[] metadataConverters) {
+            CdcMetadataConverter[] metadataConverters,
+            HashMap<String, List<ComputedColumn>> computedColumnMap) {
         this.computedColumns = computedColumns;
         this.typeMapping = typeMapping;
         this.metadataConverters = metadataConverters;
@@ -101,6 +103,7 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
                 stringifyServerTimeZone == null
                         ? ZoneId.systemDefault()
                         : ZoneId.of(stringifyServerTimeZone);
+        this.computedColumnMap = computedColumnMap;
     }
 
     @Override
@@ -252,8 +255,9 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
             System.out.println("11");
         }
 
+        List<ComputedColumn> computedColumns1 = computedColumnMap.get(currentTable);
         // generate values of computed columns
-        for (ComputedColumn computedColumn : computedColumns) {
+        for (ComputedColumn computedColumn : computedColumns1) {
             resultMap.put(
                     computedColumn.columnName(),
                     computedColumn.eval(resultMap.get(computedColumn.fieldReference())));
@@ -272,7 +276,7 @@ public class MySqlRecordParser implements FlatMapFunction<CdcSourceRecord, RichC
         return new RichCdcMultiplexRecord(
                 databaseName,
                 currentTable,
-                rowTypeBuilder.build().getFields(),
+                Collections.emptyList(),
                 Collections.emptyList(),
                 new CdcRecord(rowKind, data));
     }

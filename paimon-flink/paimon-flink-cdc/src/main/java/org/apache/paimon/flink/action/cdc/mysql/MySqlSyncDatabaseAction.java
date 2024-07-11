@@ -171,6 +171,7 @@ public class MySqlSyncDatabaseAction extends SyncDatabaseActionBase {
                 tables.add(table);
                 monitoredTables.addAll(tableInfo.identifiers());
             }
+            computedColumnMap.put(tableInfo.tableName(), computedColumns);
         }
 
         Preconditions.checkState(

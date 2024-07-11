@@ -32,11 +32,13 @@ import org.apache.paimon.table.FileStoreTable;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.paimon.types.DataField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -96,7 +98,7 @@ public abstract class SyncTableActionBase extends SynchronizationActionBase {
         return this;
     }
 
-    protected abstract Schema retrieveSchema() throws Exception;
+    protected abstract Schema retrieveSchema(HashMap<String, List<DataField>> dataFieldMap) throws Exception;
 
     protected Schema buildPaimonSchema(Schema retrievedSchema) {
         return CdcActionCommonUtils.buildPaimonSchema(
@@ -126,7 +128,7 @@ public abstract class SyncTableActionBase extends SynchronizationActionBase {
             fileStoreTable = (FileStoreTable) catalog.getTable(identifier);
             fileStoreTable = alterTableOptions(identifier, fileStoreTable);
             try {
-                Schema retrievedSchema = retrieveSchema();
+                Schema retrievedSchema = retrieveSchema(dataFieldMap);
                 computedColumns =
                         buildComputedColumns(computedColumnArgs, retrievedSchema.fields());
                 Schema paimonSchema = buildPaimonSchema(retrievedSchema);
@@ -147,7 +149,7 @@ public abstract class SyncTableActionBase extends SynchronizationActionBase {
                 checkConstraints();
             }
         } else {
-            Schema retrievedSchema = retrieveSchema();
+            Schema retrievedSchema = retrieveSchema(dataFieldMap);
             computedColumns = buildComputedColumns(computedColumnArgs, retrievedSchema.fields());
             Schema paimonSchema = buildPaimonSchema(retrievedSchema);
             catalog.createTable(identifier, paimonSchema, false);
@@ -157,7 +159,7 @@ public abstract class SyncTableActionBase extends SynchronizationActionBase {
 
     @Override
     protected FlatMapFunction<CdcSourceRecord, RichCdcMultiplexRecord> recordParse() {
-        return syncJobHandler.provideRecordParser(computedColumns, typeMapping, metadataConverters);
+        return syncJobHandler.provideRecordParser(computedColumns, typeMapping, metadataConverters, null);
     }
 
     @Override

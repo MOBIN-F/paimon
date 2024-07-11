@@ -20,7 +20,10 @@ package org.apache.paimon.flink.action.cdc;
 
 import org.apache.paimon.flink.action.Action;
 import org.apache.paimon.schema.Schema;
+import org.apache.paimon.types.DataField;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -62,7 +65,7 @@ public abstract class MessageQueueSyncTableActionBase extends SyncTableActionBas
     }
 
     @Override
-    protected Schema retrieveSchema() throws Exception {
+    protected Schema retrieveSchema(HashMap<String, List<DataField>> dataFieldMa) throws Exception {
         try (MessageQueueSchemaUtils.ConsumerWrapper consumer = syncJobHandler.provideConsumer()) {
             return MessageQueueSchemaUtils.getSchema(
                     consumer, syncJobHandler.provideDataFormat(), typeMapping);

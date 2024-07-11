@@ -25,7 +25,10 @@ import org.apache.paimon.schema.Schema;
 
 import com.ververica.cdc.connectors.mongodb.source.MongoDBSource;
 import com.ververica.cdc.connectors.mongodb.source.config.MongoDBSourceOptions;
+import org.apache.paimon.types.DataField;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,7 +68,7 @@ public class MongoDBSyncTableAction extends SyncTableActionBase {
     }
 
     @Override
-    protected Schema retrieveSchema() {
+    protected Schema retrieveSchema(HashMap<String, List<DataField>> dataFieldMap) {
         return MongodbSchemaUtils.getMongodbSchema(cdcSourceConfig);
     }
 

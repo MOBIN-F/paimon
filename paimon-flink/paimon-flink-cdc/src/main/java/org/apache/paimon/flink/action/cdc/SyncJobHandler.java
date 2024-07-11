@@ -37,7 +37,9 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.pulsar.common.config.PulsarOptions;
 import org.apache.flink.connector.pulsar.source.PulsarSourceOptions;
 import org.apache.flink.streaming.connectors.kafka.table.KafkaConnectorOptions;
+import org.apache.paimon.types.DataField;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -195,11 +197,11 @@ public class SyncJobHandler {
     public FlatMapFunction<CdcSourceRecord, RichCdcMultiplexRecord> provideRecordParser(
             List<ComputedColumn> computedColumns,
             TypeMapping typeMapping,
-            CdcMetadataConverter[] metadataConverters) {
+            CdcMetadataConverter[] metadataConverters, HashMap<String, List<ComputedColumn>> computedColumnMap) {
         switch (sourceType) {
             case MYSQL:
                 return new MySqlRecordParser(
-                        cdcSourceConfig, computedColumns, typeMapping, metadataConverters);
+                        cdcSourceConfig, computedColumns, typeMapping, metadataConverters, computedColumnMap);
             case POSTGRES:
                 return new PostgresRecordParser(
                         cdcSourceConfig, computedColumns, typeMapping, metadataConverters);

@@ -31,12 +31,14 @@ import org.apache.paimon.table.FileStoreTable;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.paimon.types.DataField;
 
 import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +60,7 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
     @Nullable protected String excludingTables;
     protected List<FileStoreTable> tables = new ArrayList<>();
     protected List<String> computedColumnArgs = new ArrayList<>();
+    protected HashMap<String, List<ComputedColumn>> computedColumnMap = new HashMap<>();
 
     public SyncDatabaseActionBase(
             String warehouse,
@@ -134,7 +137,7 @@ public abstract class SyncDatabaseActionBase extends SynchronizationActionBase {
     @Override
     protected FlatMapFunction<CdcSourceRecord, RichCdcMultiplexRecord> recordParse() {
         return syncJobHandler.provideRecordParser(
-                Collections.emptyList(), typeMapping, metadataConverters);
+                Collections.emptyList(), typeMapping, metadataConverters, computedColumnMap);
     }
 
     @Override

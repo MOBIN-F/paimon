@@ -67,7 +67,7 @@ public class CdcMultiTableParsingProcessFunction<T> extends ProcessFunction<T, V
             context.output(getUpdatedDataFieldsOutputTag(tableName), schemaChange);
         }
 
-        parser.evalComputedColumns();
+        //parser.evalComputedColumns();
         parser.parseRecords()
                 .forEach(record -> context.output(getRecordOutputTag(tableName), record));
     }
