@@ -212,7 +212,7 @@ public class TidbBinlogRecordParser extends RecordParser {
     @Override
     protected void setRoot(CdcSourceRecord record) {
         try {
-            BinLog.Binlog binlog = BinLog.Binlog.parseFrom(record.getbyteValue());
+            BinLog.Binlog binlog = BinLog.Binlog.parseFrom(record.getByteValue());
             if (binlog.getType().equals("DDL")) {
                 return;
             }
