@@ -18,6 +18,11 @@
 
 package org.apache.paimon.flink.action.cdc;
 
+import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.databind.DeserializationFeature;
+import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.databind.JsonNode;
+import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
+
 import javax.annotation.Nullable;
 
 import java.io.Serializable;
@@ -33,15 +38,20 @@ public class CdcSourceRecord implements Serializable {
     @Nullable private final Object key;
 
     // TODO Use generics to support more scenarios.
-    private final Object value;
+    private final byte[] value;
 
-    public CdcSourceRecord(@Nullable String topic, @Nullable Object key, Object value) {
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public CdcSourceRecord(@Nullable String topic, @Nullable Object key, byte[] value) {
         this.topic = topic;
         this.key = key;
         this.value = value;
+        this.objectMapper
+                .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    public CdcSourceRecord(Object value) {
+    public CdcSourceRecord(byte[] value) {
         this(null, null, value);
     }
 
@@ -55,8 +65,20 @@ public class CdcSourceRecord implements Serializable {
         return key;
     }
 
-    public Object getValue() {
+    public JsonNode getJsonNodeValue() {
+        try {
+            return objectMapper.readValue(new String(value), JsonNode.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Invalid Json:\n" + new String(value));
+        }
+    }
+
+    public byte[] getByteValue() {
         return value;
+    }
+
+    public String getStringValue() {
+        return new String(value);
     }
 
     @Override

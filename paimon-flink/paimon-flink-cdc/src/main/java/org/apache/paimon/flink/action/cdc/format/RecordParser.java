@@ -255,7 +255,7 @@ public abstract class RecordParser
     }
 
     protected void setRoot(CdcSourceRecord record) {
-        root = (JsonNode) record.getValue();
+        root = record.getJsonNodeValue();
     }
 
     protected JsonNode mergeOldRecord(JsonNode data, JsonNode oldNode) {

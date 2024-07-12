@@ -68,7 +68,7 @@ public class CdcTimestampExtractorFactory implements Serializable {
 
         @Override
         public long extractTimestamp(CdcSourceRecord record) throws JsonProcessingException {
-            return JsonSerdeUtil.extractValue((JsonNode) record.getValue(), Long.class, "ts_ms");
+            return JsonSerdeUtil.extractValue(record.getJsonNodeValue(), Long.class, "ts_ms");
         }
     }
 
@@ -80,7 +80,7 @@ public class CdcTimestampExtractorFactory implements Serializable {
         @Override
         public long extractTimestamp(CdcSourceRecord cdcSourceRecord)
                 throws JsonProcessingException {
-            JsonNode record = (JsonNode) cdcSourceRecord.getValue();
+            JsonNode record = cdcSourceRecord.getJsonNodeValue();
             if (JsonSerdeUtil.isNodeExists(record, "mysqlType")) {
                 // Canal json
                 return JsonSerdeUtil.extractValue(record, Long.class, "ts");
@@ -114,7 +114,7 @@ public class CdcTimestampExtractorFactory implements Serializable {
         @Override
         public long extractTimestamp(CdcSourceRecord record) throws JsonProcessingException {
             return JsonSerdeUtil.extractValue(
-                    (JsonNode) record.getValue(), Long.class, "payload", "ts_ms");
+                    record.getJsonNodeValue(), Long.class, "payload", "ts_ms");
         }
     }
 
