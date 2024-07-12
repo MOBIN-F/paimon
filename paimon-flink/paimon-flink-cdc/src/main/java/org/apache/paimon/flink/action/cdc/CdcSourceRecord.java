@@ -18,14 +18,15 @@
 
 package org.apache.paimon.flink.action.cdc;
 
-import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.databind.DeserializationFeature;
 import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.paimon.shade.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.annotation.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Objects;
 
 /** A data change record from the CDC source. */
@@ -37,7 +38,6 @@ public class CdcSourceRecord implements Serializable {
 
     @Nullable private final Object key;
 
-    // TODO Use generics to support more scenarios.
     private final byte[] value;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -65,14 +65,6 @@ public class CdcSourceRecord implements Serializable {
         return key;
     }
 
-    public JsonNode getJsonNodeValue() {
-        try {
-            return objectMapper.readValue(new String(value), JsonNode.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Invalid Json:\n" + new String(value));
-        }
-    }
-
     public byte[] getByteValue() {
         return value;
     }
@@ -81,25 +73,38 @@ public class CdcSourceRecord implements Serializable {
         return new String(value);
     }
 
+    public JsonNode getJsonNodeValue() {
+        try {
+            return objectMapper.readValue(value, JsonNode.class);
+        } catch (IOException e) {
+            throw new RuntimeException("Invalid Json:\n" + getStringValue());
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof CdcSourceRecord)) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         CdcSourceRecord that = (CdcSourceRecord) o;
         return Objects.equals(topic, that.topic)
                 && Objects.equals(key, that.key)
-                && Objects.equals(value, that.value);
+                && Arrays.equals(value, that.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(topic, key, value);
+        int result = Objects.hash(topic, key);
+        result = 31 * result + Arrays.hashCode(value);
+        return result;
     }
 
     @Override
     public String toString() {
-        return topic + ": " + key + " " + value;
+        return topic + ": " + key + " " + getStringValue();
     }
 }
